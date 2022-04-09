@@ -248,6 +248,9 @@ def main():
         st.markdown('<p class="font">Reports Dashbooard✍</p>',
                     unsafe_allow_html=True)
 
+        ########## FOR DISPLAYING THE CARDS##################
+
+        weekly_report = st.container()
         report = st.file_uploader(
             'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
 
@@ -658,7 +661,47 @@ def main():
                         output()
 
             if report_type == 'M&E Weekly Report':
-                st.write(datetime.now())
+
+                with weekly_report:
+                    st.markdown(f"""
+                                    <div class="container">
+
+                                    <div class="card">
+                                        <div class="title">
+                                        Tx_Curr<span>0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="title">
+                                        Tx_New<span>0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="title">
+                                        IPT Screening<span>0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="title">
+                                        Missed Aptment<span>0</span>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="title">
+                                        Dead<span>0</span>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="title">
+                                        Tran-Out<span>0</span>
+                                        </div>
+                                        <div class="content">
+                                    </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
 
     if selected == 'Feedback':
         st.write('feedback')

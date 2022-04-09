@@ -102,7 +102,8 @@ def main():
 
 #######################VL COVERAGE ####################
                     vlCoverage = (documentedViralload/viralLoadEligible) * 100
-                    vlCoverage = vlCoverage.round(2).astype(str) + "%"  # type: ignore
+                    vlCoverage = vlCoverage.round(
+                        2).astype(str) + "%"  # type: ignore
 
                     outcomes = df.query(
                         'CurrentARTStatus_Pharmacy == "Active" & Outcomes != "" ')
@@ -592,7 +593,8 @@ def main():
                         child_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child_start_date)) &(clinic['Pharmacy_LastPickupdate'] <= str(child_end_date))]  # type: ignore
+                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child_start_date)) & (
+                            clinic['Pharmacy_LastPickupdate'] <= str(child_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -657,16 +659,6 @@ def main():
 
             if report_type == 'M&E Weekly Report':
                 st.write(datetime.now())
-                st.write('No of Attendance')
-                st.write('No of IP Screened')
-                st.write('No of Missed Appointment')
-                st.write('No of Outcomes')
-                st.write('No of Tx_New')
-                st.write('No of Tx_Curr')
-                st.write('No of Tx_Curr')
-                st.write('No of Tx_Curr')
-                st.write('No of Tx_Curr')
-                st.write('No of Tx_Curr')
 
 
 if __name__ == '__main__':

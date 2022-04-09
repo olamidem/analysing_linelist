@@ -102,7 +102,7 @@ def main():
 
 #######################VL COVERAGE ####################
                     vlCoverage = (documentedViralload/viralLoadEligible) * 100
-                    vlCoverage = vlCoverage.round(2).astype(str) + "%"
+                    vlCoverage = vlCoverage.round(2).astype(str) + "%"  # type: ignore
 
                     outcomes = df.query(
                         'CurrentARTStatus_Pharmacy == "Active" & Outcomes != "" ')
@@ -193,8 +193,8 @@ def main():
                         end_date = st.date_input(
                             "To",)
 
-                    art_start = df[(df['ARTStartDate'] >= str(start_date)) &
-                                   (df['ARTStartDate'] <= str(end_date))]
+                    art_start = df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
+                                   (df['ARTStartDate'] <= str(end_date))]  # type: ignore
 
                     art_start_count = art_start['IP'].count()
 
@@ -331,8 +331,8 @@ def main():
                         pharm_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(pharm_start_date)) &
-                                             (clinic['Pharmacy_LastPickupdate'] <= str(pharm_end_date))]
+                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(pharm_start_date)) &  # type: ignore
+                                             (clinic['Pharmacy_LastPickupdate'] <= str(pharm_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -376,8 +376,8 @@ def main():
                         tx_end_date = st.date_input(
                             "To",)
 
-                        art_start = clinic[(clinic['ARTStartDate'] >= str(tx_start_date)) &
-                                           (clinic['ARTStartDate'] <= str(tx_end_date))]
+                        art_start = clinic[(clinic['ARTStartDate'] >= str(tx_start_date)) &  # type: ignore
+                                           (clinic['ARTStartDate'] <= str(tx_end_date))]  # type: ignore
 
                     pharm_start_count = art_start['ARTStartDate'].count(
                     )
@@ -420,8 +420,8 @@ def main():
                         vl_end_date = st.date_input(
                             "To",)
 
-                    art_start = clinic[(clinic['DateofCurrentViralLoad'] >= str(vl_start_date)) &
-                                       (clinic['DateofCurrentViralLoad'] <= str(vl_end_date))]
+                    art_start = clinic[(clinic['DateofCurrentViralLoad'] >= str(vl_start_date)) &  # type: ignore
+                                       (clinic['DateofCurrentViralLoad'] <= str(vl_end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
@@ -462,8 +462,8 @@ def main():
                         su_end_date = st.date_input(
                             "To",)
 
-                        art_start = clinic[(clinic['DateofCurrentViralLoad'] >= str(su_start_date)) &
-                                           (clinic['DateofCurrentViralLoad'] <= str(su_end_date))]
+                        art_start = clinic[(clinic['DateofCurrentViralLoad'] >= str(su_start_date)) &  # type: ignore
+                                           (clinic['DateofCurrentViralLoad'] <= str(su_end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
@@ -504,8 +504,8 @@ def main():
                         adult_end_date = st.date_input(
                             "To",)
 
-                    pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(adult_start_date)) &
-                                         (clinic['Pharmacy_LastPickupdate'] <= str(adult_end_date))]
+                    pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(adult_start_date)) &  # type: ignore
+                                         (clinic['Pharmacy_LastPickupdate'] <= str(adult_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -548,8 +548,8 @@ def main():
                         sec_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(sec_start_date)) &
-                                             (clinic['Pharmacy_LastPickupdate'] <= str(sec_end_date))]
+                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(sec_start_date)) &  # type: ignore
+                                             (clinic['Pharmacy_LastPickupdate'] <= str(sec_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -592,8 +592,7 @@ def main():
                         child_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child_start_date)) &
-                                             (clinic['Pharmacy_LastPickupdate'] <= str(child_end_date))]
+                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child_start_date)) &(clinic['Pharmacy_LastPickupdate'] <= str(child_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -631,8 +630,8 @@ def main():
                         child2_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child2_start_date)) &
-                                             (clinic['Pharmacy_LastPickupdate'] <= str(child2_end_date))]
+                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child2_start_date)) &  # type: ignore
+                                             (clinic['Pharmacy_LastPickupdate'] <= str(child2_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )

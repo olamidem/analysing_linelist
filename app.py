@@ -593,7 +593,7 @@ def main():
                         child_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child_start_date)) & (
+                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child_start_date)) & (  # type: ignore
                             clinic['Pharmacy_LastPickupdate'] <= str(child_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
@@ -659,6 +659,9 @@ def main():
 
             if report_type == 'M&E Weekly Report':
                 st.write(datetime.now())
+
+    if selected == 'Feedback':
+        st.write('feedback')
 
 
 if __name__ == '__main__':

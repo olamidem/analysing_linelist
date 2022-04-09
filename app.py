@@ -102,7 +102,7 @@ def main():
 
 #######################VL COVERAGE ####################
                     vlCoverage = (documentedViralload/viralLoadEligible) * 100
-                    vlCoverage = vlCoverage.round(
+                    vlCoverage = vlCoverage.round(  # type: ignore
                         2).astype(str) + "%"  # type: ignore
 
                     outcomes = df.query(

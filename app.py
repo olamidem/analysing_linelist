@@ -1,3 +1,4 @@
+from pickletools import dis
 import numpy as np
 import streamlit as st
 import pandas as pd
@@ -35,222 +36,225 @@ def main():
         st.markdown('<p class="font">Monitoring Dashbooard💻</p>',
                     unsafe_allow_html=True)
 ############MONITORING MODULES#######################################
+        montoring = st.container()
+        with montoring:
+            coll1, coll2, coll3 = st.columns(3)
+            all_card = st.container()
 
-        coll1, coll2, coll3 = st.columns(3)
-        all_card = st.container()
+            data = st.file_uploader(
+                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
 
-        data = st.file_uploader(
-            'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+            if data is not None:
 
-        if data is not None:
+                df = pd.read_csv(data)
 
-            df = pd.read_csv(data)
+                choice = st.selectbox(
+                    'What would you like to Analyse?', activities)
 
-            choice = st.selectbox(
-                'What would you like to Analyse?', activities)
+                if choice == 'Treatment Current':
+                    if choice is not None:
 
-            if choice == 'Treatment Current':
-                if choice is not None:
+                        active = df.query(
+                            'CurrentARTStatus_Pharmacy == "Active" ')
+                        ltfu = df.query('CurrentARTStatus_Pharmacy == "LTFU" ')
 
-                    active = df.query('CurrentARTStatus_Pharmacy == "Active" ')
-                    ltfu = df.query('CurrentARTStatus_Pharmacy == "LTFU" ')
+                        treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
+                        )
+                        interuptionInTreatment = ltfu['CurrentARTStatus_Pharmacy'].count(
+                        )
 
-                    treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
-                    )
-                    interuptionInTreatment = ltfu['CurrentARTStatus_Pharmacy'].count(
-                    )
+        #######################ELIGIBLE ####################
 
-    #######################ELIGIBLE ####################
+                        df['Ref_Date'] = datetime.now().date()
+                        df['ARTStartDate'] = pd.to_datetime(
+                            df.ARTStartDate, format='%d/%m/%Y')
 
-                    df['Ref_Date'] = datetime.now().date()
-                    df['ARTStartDate'] = pd.to_datetime(
-                        df.ARTStartDate, format='%d/%m/%Y')
+                        df['ARTStartDate'] = df['ARTStartDate'].dt.date
+                        df['DaysOnart'] = (
+                            df['Ref_Date'] - df['ARTStartDate']).dt.days
 
-                    df['ARTStartDate'] = df['ARTStartDate'].dt.date
-                    df['DaysOnart'] = (
-                        df['Ref_Date'] - df['ARTStartDate']).dt.days
+                        daysOnArt = df.query(
+                            ' DaysOnart >= 180  & CurrentARTStatus_Pharmacy == "Active" ')
+                        viralLoadEligible = daysOnArt['DaysOnart'].count()
 
-                    daysOnArt = df.query(
-                        ' DaysOnart >= 180  & CurrentARTStatus_Pharmacy == "Active" ')
-                    viralLoadEligible = daysOnArt['DaysOnart'].count()
+                        # st.write(daysOnArt.reset_index(drop=True))
+                        # st.write(daysOnArt['DaysOnart'].count())
 
-                    # st.write(daysOnArt.reset_index(drop=True))
-                    # st.write(daysOnArt['DaysOnart'].count())
+    ####################### DOCUMENTED VL ####################
+                        startDate = datetime.now().date()
+                        endDate = datetime.now().date() + timedelta(days=-365)
 
-####################### DOCUMENTED VL ####################
-                    startDate = datetime.now().date()
-                    endDate = datetime.now().date() + timedelta(days=-365)
+                        daysOnArt['DateofCurrentViralLoad'] = pd.to_datetime(
+                            daysOnArt.DateofCurrentViralLoad, format='%d/%m/%Y')
+                        daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad'].dt.date
 
-                    daysOnArt['DateofCurrentViralLoad'] = pd.to_datetime(
-                        daysOnArt.DateofCurrentViralLoad, format='%d/%m/%Y')
-                    daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad'].dt.date
+                        vl_documented = daysOnArt.query(
+                            ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
 
-                    vl_documented = daysOnArt.query(
-                        ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
+                        documentedViralload = vl_documented['PepID'].count()
 
-                    documentedViralload = vl_documented['PepID'].count()
+    #######################SUPPRESSED VL ####################
+                        suppressedVl = vl_documented.query(
+                            'CurrentViralLoad < 1000')
+                        suppressedVl = suppressedVl.CurrentViralLoad.count()
 
-#######################SUPPRESSED VL ####################
-                    suppressedVl = vl_documented.query(
-                        'CurrentViralLoad < 1000')
-                    suppressedVl = suppressedVl.CurrentViralLoad.count()
+    #######################SUPPRESSION RATE ####################
+                        suppressionRate = (
+                            suppressedVl/documentedViralload) * 100
+                        suppressionRate = suppressionRate.round(
+                            2).astype(str) + "%"
 
-#######################SUPPRESSION RATE ####################
-                    suppressionRate = (suppressedVl/documentedViralload) * 100
-                    suppressionRate = suppressionRate.round(
-                        2).astype(str) + "%"
+    #######################VL COVERAGE ####################
+                        vlCoverage = (documentedViralload /
+                                      viralLoadEligible) * 100
+                        vlCoverage = vlCoverage.round(  # type: ignore
+                            2).astype(str) + "%"  # type: ignore
 
-#######################VL COVERAGE ####################
-                    vlCoverage = (documentedViralload/viralLoadEligible) * 100
-                    vlCoverage = vlCoverage.round(  # type: ignore
-                        2).astype(str) + "%"  # type: ignore
+                        outcomes = df.query(
+                            'CurrentARTStatus_Pharmacy == "Active" & Outcomes != "" ')
 
-                    outcomes = df.query(
-                        'CurrentARTStatus_Pharmacy == "Active" & Outcomes != "" ')
+                        with all_card:
+                            st.markdown(f"""
+                                        <div class="container">
 
-                    with all_card:
-                        st.markdown(f"""
-                                    <div class="container">
-
-                                    <div class="card">
-                                        <div class="title">
-                                        Active<span>{treatmentCurrent}</span>
+                                        <div class="card">
+                                            <div class="title">
+                                            Active<span>{treatmentCurrent}</span>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="card">
-                                        <div class="title">
-                                        VL Eligible<span>{viralLoadEligible}</span>
+                                        <div class="card">
+                                            <div class="title">
+                                            VL Eligible<span>{viralLoadEligible}</span>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="card">
-                                        <div class="title">
-                                        Documented VL<span>{documentedViralload}</span>
+                                        <div class="card">
+                                            <div class="title">
+                                            Documented VL<span>{documentedViralload}</span>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="card">
-                                        <div class="title">
-                                        Suppressed VL<span>{suppressedVl}</span>
+                                        <div class="card">
+                                            <div class="title">
+                                            Suppressed VL<span>{suppressedVl}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="card">
-                                        <div class="title">
-                                        VL Coverage<span>{vlCoverage}</span>
+                                        <div class="card">
+                                            <div class="title">
+                                            VL Coverage<span>{vlCoverage}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="card">
-                                        <div class="title">
-                                        VL Suppression <span>{suppressionRate}</span>
+                                        <div class="card">
+                                            <div class="title">
+                                            VL Suppression <span>{suppressionRate}</span>
+                                            </div>
+                                            <div class="content">
                                         </div>
-                                        <div class="content">
-                                    </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                                        </div>
+                                        """, unsafe_allow_html=True)
 
-                    if outcomes['Outcomes'].count() == 0:
-                        pass
-                    else:
-                        out = outcomes['Outcomes'].count()
+                        if outcomes['Outcomes'].count() == 0:
+                            pass
+                        else:
+                            out = outcomes['Outcomes'].count()
 
-                        st.markdown(f'<p class="caution">Dear User,<br> You have {out} Active Patients which they also have other Outcomes. See their Status below</p>',
-                                    unsafe_allow_html=True)
+                            st.markdown(f'<p class="caution">Dear User,<br> You have {out} Active Patients which they also have other Outcomes. See their Status below</p>',
+                                        unsafe_allow_html=True)
 
-                    active['Outcomes'] = active['Outcomes'].str.lower()
-                    q = active.query(
-                        ' Outcomes == "transferred out" | Outcomes == "death" | Outcomes == "discontinued Care" ')
+                        active['Outcomes'] = active['Outcomes'].str.lower()
+                        q = active.query(
+                            ' Outcomes == "transferred out" | Outcomes == "death" | Outcomes == "discontinued Care" ')
 
-                    col = q[['PepID', 'ARTStartDate', 'Sex',
-                             'Pharmacy_LastPickupdate', 'DaysOfARVRefill', 'CurrentARTRegimen', 'CurrentARTStatus_Pharmacy', 'Outcomes', 'Outcomes_Date']]
+                        col = q[['PepID', 'ARTStartDate', 'Sex',
+                                'Pharmacy_LastPickupdate', 'DaysOfARVRefill', 'CurrentARTRegimen', 'CurrentARTStatus_Pharmacy', 'Outcomes', 'Outcomes_Date']]
 
-                    index_no = col.reset_index(drop=True)
-                    index_no
+                        index_no = col.reset_index(drop=True)
+                        index_no
 
-                pie_chart = df['CurrentARTStatus_Pharmacy'].value_counts()
-                names = ['Active', 'LTFU']
-                label = px.pie(values=pie_chart, names=names, hole=.3,
-                               color_discrete_sequence=px.colors.sequential.RdBu)
-                st.write(label)
+                    pie_chart = df['CurrentARTStatus_Pharmacy'].value_counts()
+                    names = ['Active', 'LTFU']
+                    label = px.pie(values=pie_chart, names=names, hole=.3,
+                                   color_discrete_sequence=px.colors.sequential.RdBu)
+                    st.write(label)
 
-            if choice == 'Treatment New':
+                if choice == 'Treatment New':
 
-                if data is not None:
+                    if data is not None:
 
-                    df['ARTStartDate'] = pd.to_datetime(
-                        df.ARTStartDate, format='%d/%m/%Y')
+                        df['ARTStartDate'] = pd.to_datetime(
+                            df.ARTStartDate, format='%d/%m/%Y')
 
-                    # df['ARTStartDate'] = df['ARTStartDate'].dt.strftime('%d/%m/%Y')
-                    infer_datetime_format = True
-                    # art_startdate = df['ARTStartDate'].to_list()
-                    dt1, dt2 = st.columns(2)
-                    with dt1:
-                        # start date
-                        start_date = st.date_input(
-                            "From",)
+                        # df['ARTStartDate'] = df['ARTStartDate'].dt.strftime('%d/%m/%Y')
+                        infer_datetime_format = True
+                        # art_startdate = df['ARTStartDate'].to_list()
+                        dt1, dt2 = st.columns(2)
+                        with dt1:
+                            # start date
+                            start_date = st.date_input(
+                                "From",)
 
-                    with dt2:
-                        # end date
-                        end_date = st.date_input(
-                            "To",)
+                        with dt2:
+                            # end date
+                            end_date = st.date_input(
+                                "To",)
 
-                    art_start = df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
-                                   (df['ARTStartDate'] <= str(end_date))]  # type: ignore
+                        art_start = df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
+                                       (df['ARTStartDate'] <= str(end_date))]  # type: ignore
 
-                    art_start_count = art_start['IP'].count()
+                        art_start_count = art_start['IP'].count()
 
-                    with coll1:
-                        st.subheader('TX_NEW')
-                        st.success(art_start_count)
-                    with coll2:
-                        st.subheader('TX_NEW')
-                        st.success(art_start_count)
-                    with coll3:
-                        st.subheader('TX_NEW')
-                        st.success(art_start_count)
+                        with coll1:
+                            st.subheader('TX_NEW')
+                            st.success(art_start_count)
+                        with coll2:
+                            st.subheader('TX_NEW')
+                            st.success(art_start_count)
+                        with coll3:
+                            st.subheader('TX_NEW')
+                            st.success(art_start_count)
 
-                    # st.dataframe(art_start)
-                    art_start['ARTStartDate'] = art_start['ARTStartDate'].dt.strftime(
-                        '%d/%m/%Y')
-                    info = art_start[['Sex', 'PepID',
-                                      'ARTStartDate',
-                                     'Pharmacy_LastPickupdate',
-                                      'DaysOfARVRefill', 'CurrentARTRegimen', 'Current_Age', 'FirstCD4', 'CurrentINHReceived',
-                                      'Current_TB_Status', 'PBS', 'IPT_Screening_Date', ]]
+                        # st.dataframe(art_start)
+                        art_start['ARTStartDate'] = art_start['ARTStartDate'].dt.strftime(
+                            '%d/%m/%Y')
+                        info = art_start[['Sex', 'PepID',
+                                          'ARTStartDate',
+                                          'Pharmacy_LastPickupdate',
+                                          'DaysOfARVRefill', 'CurrentARTRegimen', 'Current_Age', 'FirstCD4', 'CurrentINHReceived',
+                                          'Current_TB_Status', 'PBS', 'IPT_Screening_Date', ]]
 
-                    info_options = st.multiselect(
-                        'Select Data to Analyze',
-                        info.columns)
-                    mask = art_start[info_options]
-                    m = mask.reset_index(drop=True)
-                    m
+                        info_options = st.multiselect(
+                            'Select Data to Analyze',
+                            info.columns)
+                        mask = art_start[info_options]
+                        mask = mask.reset_index(drop=True)
+                        mask
 
-                    d = info.groupby("PepID").count()
-                    st.write(d)
+                        d = info.groupby("PepID").count()
+                        st.write(d)
 
-                    # info.value_counts()
+                        # info.value_counts()
 
-                if choice == 'HTS_POS':
-                    st.subheader('Hiv Test Service Positive')
+                    if choice == 'HTS_POS':
+                        st.subheader('Hiv Test Service Positive')
 
-                # if choice == 'HTS_TXT':
-                #     st.subheader('All Hiv Test Service')
+                    # if choice == 'HTS_TXT':
+                    #     st.subheader('All Hiv Test Service')
 
-                # # st.write('start date:', start_date)
-                # # st.write('end date:', end_date)
-                # # st.sidebar.selectbox('select sate', s)
-                # # st.sidebar.selectbox('select sate', e)
+                    # # st.write('start date:', start_date)
+                    # # st.write('end date:', end_date)
+                    # # st.sidebar.selectbox('select sate', s)
+                    # # st.sidebar.selectbox('select sate', e)
 
 
 # REPORT MODULES
-    if selected == 'Reports':
 
+    if selected == 'Reports':
         st.markdown('<p class="font">Reports Dashbooard✍</p>',
                     unsafe_allow_html=True)
 
         ########## FOR DISPLAYING THE CARDS##################
-
-        weekly_report = st.container()
+        weekly_display = st.container()
         report = st.file_uploader(
             'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
 
@@ -313,6 +317,48 @@ def main():
 
             if report_type == '':
                 pass
+
+            if report_type == 'M&E Weekly Report':
+                with weekly_display:
+                    st.markdown(f"""
+                                    <div class="container">
+
+                                    <div class="card">
+                                        <div class="title">
+                                        Active<span>0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="title">
+                                        VL Eligible<span>0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="title">
+                                        Documented VL<span>0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="title">
+                                        Suppressed VL<span>0</span>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="title">
+                                        VL Coverage<span>0</span>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="title">
+                                        VL Suppression <span>0</span>
+                                        </div>
+                                        <div class="content">
+                                    </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
 
             if report_type == 'M&E Monthly Report':
 
@@ -659,49 +705,6 @@ def main():
 
                         st.subheader('Child 2nd Line ARV')
                         output()
-
-            if report_type == 'M&E Weekly Report':
-
-                with weekly_report:
-                    st.markdown(f"""
-                                    <div class="container">
-
-                                    <div class="card">
-                                        <div class="title">
-                                        Tx_Curr<span>0</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="card">
-                                        <div class="title">
-                                        Tx_New<span>0</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="card">
-                                        <div class="title">
-                                        IPT Screening<span>0</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="card">
-                                        <div class="title">
-                                        Missed Aptment<span>0</span>
-                                        </div>
-                                    </div>
-                                    <div class="card">
-                                        <div class="title">
-                                        Dead<span>0</span>
-                                        </div>
-                                    </div>
-                                    <div class="card">
-                                        <div class="title">
-                                        Tran-Out<span>0</span>
-                                        </div>
-                                        <div class="content">
-                                    </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
 
     if selected == 'Feedback':
         st.write('feedback')

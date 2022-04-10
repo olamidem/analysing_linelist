@@ -318,6 +318,7 @@ def main():
             if report_type == '':
                 pass
 
+##############&E Weekly Report########################
             if report_type == 'M&E Weekly Report':
                 with weekly_display:
                     st.markdown(f"""
@@ -360,6 +361,8 @@ def main():
                                     </div>
                                     """, unsafe_allow_html=True)
 
+
+######################### 'M&E Monthly Report ###########################
             if report_type == 'M&E Monthly Report':
 
                 option = st.selectbox(
@@ -415,6 +418,7 @@ def main():
                         # fin = pd.DataFrame(["female",d])
                         output()
 
+######################### Treatment New ###########################
                 if option == 'Treatment New':
 
                     with dt1:
@@ -501,6 +505,7 @@ def main():
                         # fin = pd.DataFrame(["female",d])
                         output()
 
+##################### Suppressed Viral load###############################
                 if option == 'Viroloogically Suppressed':
 
                     with dt1:
@@ -543,6 +548,7 @@ def main():
                         # fin = pd.DataFrame(["female",d])
                         output()
 
+######################### Adult 1st line ###########################
                 if option == 'Adult 1st line':
 
                     with dt1:
@@ -587,6 +593,7 @@ def main():
                         st.subheader('Adult 1st Line ARV')
                         output()
 
+######################### Adult 2nd line ###########################
                 if option == 'Adult 2nd line':
 
                     with dt1:
@@ -631,6 +638,7 @@ def main():
                         st.subheader('Adult 2nd Line ARV')
                         output()
 
+######################### Child 1st line ###########################
                 if option == 'Child 1st line':
 
                     with dt1:
@@ -670,6 +678,7 @@ def main():
                         st.subheader('Child 1st Line ARV')
                         output()
 
+######################### Child 2nd line ###########################
                 if option == 'Child 2nd line':
 
                     with dt1:

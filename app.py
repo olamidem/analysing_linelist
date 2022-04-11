@@ -43,7 +43,7 @@ def main():
 
             data = st.file_uploader(
                 'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
-            st.write("ksihduhfuufeihurehuehbhdcbhcuh")
+
             if data is not None:
 
                 df = pd.read_csv(data)

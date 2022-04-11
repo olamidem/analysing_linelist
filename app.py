@@ -18,7 +18,7 @@ with open('style.css') as f:
 def main():
 
     activities = ['', 'Treatment Current',
-                  'Treatment New', 'Pharmcay Reporting', 'HTS_POS', 'HTS_TXT']
+                  'Treatment New', 'Pharmcay Reporting']
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
 
@@ -43,7 +43,7 @@ def main():
 
             data = st.file_uploader(
                 'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
-
+            st.write("ksihduhfuufeihurehuehbhdcbhcuh")
             if data is not None:
 
                 df = pd.read_csv(data)
@@ -172,11 +172,11 @@ def main():
                         index_no = col.reset_index(drop=True)
                         index_no
 
-                    pie_chart = df['CurrentARTStatus_Pharmacy'].value_counts()
-                    names = ['Active', 'LTFU']
-                    label = px.pie(values=pie_chart, names=names, hole=.3,
-                                   color_discrete_sequence=px.colors.sequential.RdBu)
-                    st.write(label)
+                        pie_chart = df['CurrentARTStatus_Pharmacy'].value_counts()
+                        names = ['Active', 'LTFU']
+                        label = px.pie(values=pie_chart, names=names, hole=.3,
+                                       color_discrete_sequence=px.colors.sequential.RdBu)
+                        st.write(label)
 
                 if choice == 'Treatment New':
 
@@ -227,11 +227,12 @@ def main():
                             'Select Data to Analyze',
                             info.columns)
                         mask = art_start[info_options]
+
                         mask = mask.reset_index(drop=True)
                         mask
 
-                        d = info.groupby("PepID").count()
-                        st.write(d)
+                        # d = info.groupby("PepID").count()
+                        # st.write(d)
 
                         # info.value_counts()
 
@@ -320,41 +321,59 @@ def main():
 
 ##############&E Weekly Report########################
             if report_type == 'M&E Weekly Report':
+
+                dt1, dt2 = st.columns(2)
+                with dt1:
+                 # start date
+                    start_date = st.date_input(
+                        "From",)
+                with dt2:
+                    # end date
+                    end_date = st.date_input(
+                        "To",)
+
+                start_date, end_date
+
+                active = clinic.query(
+                    'CurrentARTStatus_Pharmacy == "Active" ')
+                treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
+                )
+
                 with weekly_display:
                     st.markdown(f"""
                                     <div class="container">
 
                                     <div class="card">
                                         <div class="title">
-                                        Active<span>0</span>
+                                        Tx_Curr<span>{treatmentCurrent}</span>
                                         </div>
                                     </div>
 
                                     <div class="card">
                                         <div class="title">
-                                        VL Eligible<span>0</span>
+                                        Tx_New<span>0</span>
                                         </div>
                                     </div>
 
                                     <div class="card">
                                         <div class="title">
-                                        Documented VL<span>0</span>
+                                        Attendance<span>0</span>
                                         </div>
                                     </div>
 
                                     <div class="card">
                                         <div class="title">
-                                        Suppressed VL<span>0</span>
+                                        IPT Screening<span>0</span>
                                         </div>
                                     </div>
                                     <div class="card">
                                         <div class="title">
-                                        VL Coverage<span>0</span>
+                                        Missed Appt<span>0</span>
                                         </div>
                                     </div>
                                     <div class="card">
                                         <div class="title">
-                                        VL Suppression <span>0</span>
+                                         Outcomes<span>0</span>
                                         </div>
                                         <div class="content">
                                     </div>
@@ -717,6 +736,7 @@ def main():
 
     if selected == 'Feedback':
         st.write('feedback')
+        import numpy as np
 
 
 if __name__ == '__main__':

@@ -1,4 +1,3 @@
-from pickletools import dis
 import numpy as np
 import streamlit as st
 import pandas as pd
@@ -17,8 +16,48 @@ with open('style.css') as f:
 
 def main():
 
-    activities = ['', 'Treatment Current',
-                  'Treatment New', 'Pharmcay Reporting']
+    def condition(age):
+        if age >= 5 and age <= 9:
+            return "5 - 9"
+        elif age >= 10 and age <= 14:
+            return "10 - 14"
+        elif age >= 15 and age <= 19:
+            return "15 - 19"
+        elif age >= 20 and age <= 24:
+            return "20 - 24"
+        elif age >= 25 and age <= 29:
+            return "25 - 29"
+        elif age >= 30 and age <= 34:
+            return "30 - 34"
+        elif age >= 35 and age <= 39:
+            return "35 - 39"
+        elif age >= 40 and age <= 44:
+            return "40 - 44"
+        elif age >= 45 and age <= 49:
+            return "45 - 49"
+        elif age >= 50:
+            return "50+"
+        else:
+            female['Current_Age'].isnull()
+            return "1 - 4"
+
+############OUTPUT FUNCTION###############################
+    def output():
+        colm, colf, colp = st.columns(3)
+        with colm:
+            st.success("MALE")
+            st.write(m.value_counts())
+
+        with colf:
+            st.warning("FEMALE")
+            st.write(f.value_counts())
+
+        with colp:
+            st.info("PREGNANT/B FEEDING")
+            st.write(p.value_counts())
+
+    activities = ['', 'Treatment Current', 'Treatment New', 'Treatment PVLS',
+                  'Pharmcay Reporting']
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
 
@@ -38,8 +77,9 @@ def main():
 ############MONITORING MODULES#######################################
         montoring = st.container()
         with montoring:
-            coll1, coll2, coll3 = st.columns(3)
             all_card = st.container()
+            ####################### TREATMENT NEW CONTAINER###################
+            txnewContainer = st.container()
 
             data = st.file_uploader(
                 'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
@@ -56,11 +96,7 @@ def main():
 
                         active = df.query(
                             'CurrentARTStatus_Pharmacy == "Active" ')
-                        ltfu = df.query('CurrentARTStatus_Pharmacy == "LTFU" ')
-
                         treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
-                        )
-                        interuptionInTreatment = ltfu['CurrentARTStatus_Pharmacy'].count(
                         )
 
         #######################ELIGIBLE ####################
@@ -115,8 +151,8 @@ def main():
 
                         with all_card:
                             st.markdown(f"""
+                                        <marquee><h4>Below shown here use Date as of today</h4></marquee>
                                         <div class="container">
-
                                         <div class="card">
                                             <div class="title">
                                             Active<span>{treatmentCurrent}</span>
@@ -203,16 +239,47 @@ def main():
                                        (df['ARTStartDate'] <= str(end_date))]  # type: ignore
 
                         art_start_count = art_start['IP'].count()
+                        pbs = art_start.query('PBS == "Yes" ')
+                        pbs = pbs['PBS'].count()
 
-                        with coll1:
-                            st.subheader('TX_NEW')
-                            st.success(art_start_count)
-                        with coll2:
-                            st.subheader('TX_NEW')
-                            st.success(art_start_count)
-                        with coll3:
-                            st.subheader('TX_NEW')
-                            st.success(art_start_count)
+                        with txnewContainer:
+                            st.markdown(f"""
+                                        <div class="txnew">
+                                            <div class="card">
+                                                <div class="title">
+                                                    Tx_New
+                                                </div>
+                                                <div class="circle">{art_start_count}</div>
+                                            </div>
+
+                                        <div class="card">
+                                            <div class="title">
+                                                PBS
+                                            </div>
+                                            <div class="circle">{pbs}</div>
+                                        </div>
+                                        <div class="card">
+                                            <div class="title">
+                                                Step
+                                            </div>
+                                            <div class="circle">1</div>
+                                        </div>
+
+                                        <div class="card">
+                                            <div class="title">
+                                                Step
+                                            </div>
+                                            <div class="circle">1</div>
+                                        </div>
+                                        <div class="card">
+                                            <div class="title">
+                                                Step
+                                            </div>
+                                            <div class="circle">1</div>
+                                        </div>
+                                        
+                                        </div>
+                                                """, unsafe_allow_html=True)
 
                         # st.dataframe(art_start)
                         art_start['ARTStartDate'] = art_start['ARTStartDate'].dt.strftime(
@@ -235,17 +302,6 @@ def main():
                         # st.write(d)
 
                         # info.value_counts()
-
-                    if choice == 'HTS_POS':
-                        st.subheader('Hiv Test Service Positive')
-
-                    # if choice == 'HTS_TXT':
-                    #     st.subheader('All Hiv Test Service')
-
-                    # # st.write('start date:', start_date)
-                    # # st.write('end date:', end_date)
-                    # # st.sidebar.selectbox('select sate', s)
-                    # # st.sidebar.selectbox('select sate', e)
 
 
 # REPORT MODULES
@@ -271,45 +327,6 @@ def main():
             clinic['DateofCurrentViralLoad'] = pd.to_datetime(
                 clinic.DateofCurrentViralLoad, format='%d/%m/%Y')
 
-            def condition(age):
-                if age >= 5 and age <= 9:
-                    return "5 - 9"
-                elif age >= 10 and age <= 14:
-                    return "10 - 14"
-                elif age >= 15 and age <= 19:
-                    return "15 - 19"
-                elif age >= 20 and age <= 24:
-                    return "20 - 24"
-                elif age >= 25 and age <= 29:
-                    return "25 - 29"
-                elif age >= 30 and age <= 34:
-                    return "30 - 34"
-                elif age >= 35 and age <= 39:
-                    return "35 - 39"
-                elif age >= 40 and age <= 44:
-                    return "40 - 44"
-                elif age >= 45 and age <= 49:
-                    return "45 - 49"
-                elif age >= 50:
-                    return "50+"
-                else:
-                    female['Current_Age'].isnull()
-                    return "1 - 4"
-
-############OUTPUT FUNCTION###############################
-            def output():
-                colm, colf, colp = st.columns(3)
-                with colm:
-                    st.success("MALE")
-                    st.write(m.value_counts())
-
-                with colf:
-                    st.warning("FEMALE")
-                    st.write(f.value_counts())
-
-                with colp:
-                    st.info("PREGNANT/B FEEDING")
-                    st.write(p.value_counts())
 
 ##############END OF FUNCTION########################
 

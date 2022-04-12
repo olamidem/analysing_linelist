@@ -56,6 +56,16 @@ def main():
             st.info("PREGNANT/B FEEDING")
             st.write(p.value_counts())
 
+    def tx_curr():
+        active = df.query(
+            'CurrentARTStatus_Pharmacy == "Active" ')
+        return active
+
+    def count_active():
+        treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
+        )
+        return treatmentCurrent
+
     activities = ['', 'Treatment Current', 'Treatment New', 'Treatment PVLS',
                   'Pharmcay Reporting']
     reports = ['', 'HI Weekly Report',
@@ -94,10 +104,8 @@ def main():
                 if choice == 'Treatment Current':
                     if choice is not None:
 
-                        active = df.query(
-                            'CurrentARTStatus_Pharmacy == "Active" ')
-                        treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
-                        )
+                        active = tx_curr()
+                        treatmentCurrent = count_active()
 
         #######################ELIGIBLE ####################
 
@@ -316,16 +324,16 @@ def main():
             'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
 
         if report is not None:
-            clinic = pd.read_csv(report)
+            df = pd.read_csv(report)
 
-            clinic['Pharmacy_LastPickupdate'] = pd.to_datetime(
-                clinic.Pharmacy_LastPickupdate, format='%d/%m/%Y')
+            df['Pharmacy_LastPickupdate'] = pd.to_datetime(
+                df.Pharmacy_LastPickupdate, format='%d/%m/%Y')
 
-            clinic['ARTStartDate'] = pd.to_datetime(
-                clinic.ARTStartDate, format='%d/%m/%Y')
+            df['ARTStartDate'] = pd.to_datetime(
+                df.ARTStartDate, format='%d/%m/%Y')
 
-            clinic['DateofCurrentViralLoad'] = pd.to_datetime(
-                clinic.DateofCurrentViralLoad, format='%d/%m/%Y')
+            df['DateofCurrentViralLoad'] = pd.to_datetime(
+                df.DateofCurrentViralLoad, format='%d/%m/%Y')
 
 
 ##############END OF FUNCTION########################
@@ -351,10 +359,8 @@ def main():
 
                 start_date, end_date
 
-                active = clinic.query(
-                    'CurrentARTStatus_Pharmacy == "Active" ')
-                treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
-                )
+                active = tx_curr()
+                treatmentCurrent = count_active()
 
                 with weekly_display:
                     st.markdown(f"""

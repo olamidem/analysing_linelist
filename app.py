@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from datetime import date, datetime, timedelta
 from streamlit_option_menu import option_menu
+from dateutil.relativedelta import relativedelta, MO
 
 
 st.set_page_config(page_title="Report Dashbooard 💻", page_icon="📑", layout="wide",
@@ -374,8 +375,6 @@ def main():
                     end_date = st.date_input(
                         "To",)
 
-                start_date, end_date
-
                 active = tx_curr()
 
                 treatmentCurrent = count_active()
@@ -390,15 +389,20 @@ def main():
 
                 outcomes_date = outComes()
 
-                missedApp = df['Pharmacy_LastPickupdate'].dt.date
+                df['LastPickupDateCal'] = pd.to_datetime(
+                    df['LastPickupDateCal'], format="%d/%m/%Y")
 
-                arvRefill = df['DaysOfARVRefill']
+                df = df.query('CurrentARTStatus_Pharmacy =="Active" ')
+                # arvRefill = df['DaysOfARVRefill'].astype(int)
 
-                # missedApp = missedApp + arvRefill
-                # ph  arvRefill
+                def calMissedApp(
+                    x): return x['LastPickupDateCal'] + relativedelta(days=int(x['DaysOfARVRefill']))
+                df['appointmentDate'] = df.apply(calMissedApp, axis=1)
 
-                missedApp.dtypes
-                arvRefill.dtypes
+                thisWeekMissedAppointment = df[(df['appointmentDate'] >= str(start_date)) &  # type: ignore
+                                               (df['appointmentDate'] <= str(end_date))]  # type: ignore
+                thisWeekMissedAppointment = thisWeekMissedAppointment['appointmentDate'].count(
+                )
 
                 ipt_screening = pharm_start['IPT_Screening_Date'].count()
 
@@ -437,7 +441,7 @@ def main():
                                                     <div class="title">
                                                         MIssed Appt
                                                     </div>
-                                                    <div class="circle">{treatmentCurrent}</div>
+                                                    <div class="circle">{thisWeekMissedAppointment}</div>
                                                 </div>
                                             <div class="card">
                                                     <div class="title">

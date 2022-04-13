@@ -1,3 +1,4 @@
+from pickletools import int4
 import numpy as np
 import streamlit as st
 import pandas as pd
@@ -65,6 +66,22 @@ def main():
         treatmentCurrent = active['CurrentARTStatus_Pharmacy'].count(
         )
         return treatmentCurrent
+
+    def artStart():
+        art_start = df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
+                       (df['ARTStartDate'] <= str(end_date))]  # type: ignore
+        return art_start
+
+    def pharm():
+        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(start_date)) &  # type: ignore
+                         (df['Pharmacy_LastPickupdate'] <= str(end_date))]  # type: ignore
+        return pharm_start
+
+    def outComes():
+        outcomes_date = df[(df['Outcomes_Date'] >= str(start_date)) &  # type: ignore
+                           (df['Outcomes_Date'] <= str(end_date))]  # type: ignore
+        outcomes_date = outcomes_date['Outcomes_Date'].count()
+        return outcomes_date
 
     activities = ['', 'Treatment Current', 'Treatment New', 'Treatment PVLS',
                   'Pharmcay Reporting']
@@ -243,51 +260,51 @@ def main():
                             end_date = st.date_input(
                                 "To",)
 
-                        art_start = df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
-                                       (df['ARTStartDate'] <= str(end_date))]  # type: ignore
-
+                        art_start = artStart()
                         art_start_count = art_start['IP'].count()
                         pbs = art_start.query('PBS == "Yes" ')
                         pbs = pbs['PBS'].count()
 
                         with txnewContainer:
                             st.markdown(f"""
-                                        <div class="txnew">
-                                            <div class="card">
-                                                <div class="title">
-                                                    Tx_New
-                                                </div>
-                                                <div class="circle">{art_start_count}</div>
-                                            </div>
-
-                                        <div class="card">
-                                            <div class="title">
-                                                PBS
-                                            </div>
-                                            <div class="circle">{pbs}</div>
-                                        </div>
-                                        <div class="card">
-                                            <div class="title">
-                                                Step
-                                            </div>
-                                            <div class="circle">1</div>
-                                        </div>
-
-                                        <div class="card">
-                                            <div class="title">
-                                                Step
-                                            </div>
-                                            <div class="circle">1</div>
-                                        </div>
-                                        <div class="card">
-                                            <div class="title">
-                                                Step
-                                            </div>
-                                            <div class="circle">1</div>
-                                        </div>
                                         
+                                        <div class="container">
+                                        <div class="card">
+                                            <div class="title">
+                                            Tx_New<span>{art_start_count}</span>
+                                            </div>
                                         </div>
-                                                """, unsafe_allow_html=True)
+
+                                        <div class="card">
+                                            <div class="title">
+                                            PBS<span>{pbs}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="card">
+                                            <div class="title">
+                                            Hold<span>1</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="card">
+                                            <div class="title">
+                                            Hold<span>1</span>
+                                            </div>
+                                        </div>
+                                        <div class="card">
+                                            <div class="title">
+                                            Hold<span>1</span>
+                                            </div>
+                                        </div>
+                                        <div class="card">
+                                            <div class="title">
+                                            Hold <span>1</span>
+                                            </div>
+                                            <div class="content">
+                                        </div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
 
                         # st.dataframe(art_start)
                         art_start['ARTStartDate'] = art_start['ARTStartDate'].dt.strftime(
@@ -360,49 +377,77 @@ def main():
                 start_date, end_date
 
                 active = tx_curr()
+
                 treatmentCurrent = count_active()
 
-                with weekly_display:
-                    st.markdown(f"""
-                                    <div class="container">
+                art_start = artStart()
 
-                                    <div class="card">
-                                        <div class="title">
-                                        Tx_Curr<span>{treatmentCurrent}</span>
-                                        </div>
-                                    </div>
+                art_start_count = art_start['IP'].count()
+                pharm_start = pharm()
 
-                                    <div class="card">
-                                        <div class="title">
-                                        Tx_New<span>0</span>
-                                        </div>
-                                    </div>
+                pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
+                )
 
-                                    <div class="card">
-                                        <div class="title">
-                                        Attendance<span>0</span>
-                                        </div>
-                                    </div>
+                outcomes_date = outComes()
 
-                                    <div class="card">
-                                        <div class="title">
-                                        IPT Screening<span>0</span>
-                                        </div>
-                                    </div>
-                                    <div class="card">
-                                        <div class="title">
-                                        Missed Appt<span>0</span>
-                                        </div>
-                                    </div>
-                                    <div class="card">
-                                        <div class="title">
-                                         Outcomes<span>0</span>
-                                        </div>
-                                        <div class="content">
-                                    </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                missedApp = df['Pharmacy_LastPickupdate'].dt.date
 
+                arvRefill = df['DaysOfARVRefill']
+
+                # missedApp = missedApp + arvRefill
+                # ph  arvRefill
+
+                missedApp.dtypes
+                arvRefill.dtypes
+
+                ipt_screening = pharm_start['IPT_Screening_Date'].count()
+
+                if pharm_start_count == 0:
+                    pass
+                else:
+                    with weekly_display:
+                        st.markdown(f"""
+                                            <div class="txnew">
+                                                <div class="card">
+                                                    <div class="title">
+                                                        Tx_Curr
+                                                    </div>
+                                                    <div class="circle">{treatmentCurrent}</div>
+                                                </div>
+
+                                            <div class="card">
+                                                    <div class="title">
+                                                        Tx_New
+                                                    </div>
+                                                    <div class="circle">{art_start_count}</div>
+                                                </div>
+                                            <div class="card">
+                                                    <div class="title">
+                                                        Attendance
+                                                    </div>
+                                                    <div class="circle">{pharm_start_count}</div>
+                                                </div>
+                                            <div class="card">
+                                                    <div class="title">
+                                                        IPT Screening
+                                                    </div>
+                                                    <div class="circle">{ipt_screening}</div>
+                                                </div>
+                                            <div class="card">
+                                                    <div class="title">
+                                                        MIssed Appt
+                                                    </div>
+                                                    <div class="circle">{treatmentCurrent}</div>
+                                                </div>
+                                            <div class="card">
+                                                    <div class="title">
+                                                        Outcomes
+                                                    </div>
+                                                    <div class="circle">{outcomes_date}</div>
+                                                </div>
+                                            
+                                            </div>
+                                                    """, unsafe_allow_html=True)
 
 ######################### 'M&E Monthly Report ###########################
             if report_type == 'M&E Monthly Report':
@@ -411,7 +456,7 @@ def main():
                     'Select Report Type',
                     ('', 'Clinic Attendance', 'Treatment New', 'VL Test Results',
                      'Viroloogically Suppressed', 'Adult 1st line',
-                     'Adult 2nd line', 'Child 1st line', 'Adult 2nd line'))
+                     'Adult 2nd line', 'Child 1st line', 'Child 2nd line'))
 
                 dt1, dt2 = st.columns(2)
 
@@ -419,15 +464,14 @@ def main():
 
                     with dt1:
                         # start date
-                        pharm_start_date = st.date_input(
+                        start_date = st.date_input(
                             "From",)
                     with dt2:
                         # end date
-                        pharm_end_date = st.date_input(
+                        end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(pharm_start_date)) &  # type: ignore
-                                             (clinic['Pharmacy_LastPickupdate'] <= str(pharm_end_date))]  # type: ignore
+                    pharm_start = pharm()
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -456,7 +500,7 @@ def main():
                         p = pregnant['Current_Age'].apply(condition)
 
                         st.subheader(
-                            f'Clinic Attendance for the period of { pharm_start_date} to { pharm_end_date}')
+                            f'df Attendance for the period of { start_date} to { end_date}')
                         # fin = pd.DataFrame(["female",d])
                         output()
 
@@ -465,15 +509,14 @@ def main():
 
                     with dt1:
                         # start date
-                        tx_start_date = st.date_input(
+                        start_date = st.date_input(
                             "From",)
                     with dt2:
                         # end date
-                        tx_end_date = st.date_input(
+                        end_date = st.date_input(
                             "To",)
 
-                        art_start = clinic[(clinic['ARTStartDate'] >= str(tx_start_date)) &  # type: ignore
-                                           (clinic['ARTStartDate'] <= str(tx_end_date))]  # type: ignore
+                    art_start = artStart()
 
                     pharm_start_count = art_start['ARTStartDate'].count(
                     )
@@ -502,7 +545,7 @@ def main():
 
                         # fin = pd.DataFrame(["female",d])
                         st.subheader(
-                            f'Treatment New for the period of { tx_start_date} to { tx_end_date}')
+                            f'Treatment New for the period of { start_date} to { end_date}')
                         output()
 
 #####################Viral load result@@###############################
@@ -516,8 +559,8 @@ def main():
                         vl_end_date = st.date_input(
                             "To",)
 
-                    art_start = clinic[(clinic['DateofCurrentViralLoad'] >= str(vl_start_date)) &  # type: ignore
-                                       (clinic['DateofCurrentViralLoad'] <= str(vl_end_date))]  # type: ignore
+                    art_start = df[(df['DateofCurrentViralLoad'] >= str(vl_start_date)) &  # type: ignore
+                                   (df['DateofCurrentViralLoad'] <= str(vl_end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
@@ -559,8 +602,8 @@ def main():
                         su_end_date = st.date_input(
                             "To",)
 
-                        art_start = clinic[(clinic['DateofCurrentViralLoad'] >= str(su_start_date)) &  # type: ignore
-                                           (clinic['DateofCurrentViralLoad'] <= str(su_end_date))]  # type: ignore
+                        art_start = df[(df['DateofCurrentViralLoad'] >= str(su_start_date)) &  # type: ignore
+                                       (df['DateofCurrentViralLoad'] <= str(su_end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
@@ -602,8 +645,8 @@ def main():
                         adult_end_date = st.date_input(
                             "To",)
 
-                    pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(adult_start_date)) &  # type: ignore
-                                         (clinic['Pharmacy_LastPickupdate'] <= str(adult_end_date))]  # type: ignore
+                    pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(adult_start_date)) &  # type: ignore
+                                     (df['Pharmacy_LastPickupdate'] <= str(adult_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -647,8 +690,8 @@ def main():
                         sec_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(sec_start_date)) &  # type: ignore
-                                             (clinic['Pharmacy_LastPickupdate'] <= str(sec_end_date))]  # type: ignore
+                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(sec_start_date)) &  # type: ignore
+                                         (df['Pharmacy_LastPickupdate'] <= str(sec_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -671,8 +714,8 @@ def main():
 
                         # PREGNANT/BREASTFEEDING
 
-                        pregnant = pharm_start.query(
-                            'Sex == "F" & CurrentPregnancyStatus =="Breastfeeding" | CurrentPregnancyStatus =="Pregnant" & CurrentRegimenLine == "Adult 2nd line ARV regimen" | CurrentRegimenLine == "Child 2nd line ARV regimen"  ')
+                        pregnant = female.query(
+                            ' CurrentPregnancyStatus == "Breastfeeding" | CurrentPregnancyStatus =="Pregnant" ')
 
                         p = pregnant['Current_Age'].apply(condition)
 
@@ -692,8 +735,8 @@ def main():
                         child_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child_start_date)) & (  # type: ignore
-                            clinic['Pharmacy_LastPickupdate'] <= str(child_end_date))]  # type: ignore
+                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(child_start_date)) & (  # type: ignore
+                            df['Pharmacy_LastPickupdate'] <= str(child_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -715,6 +758,10 @@ def main():
                         m = male['Current_Age'].apply(condition)
 
                         # PREGNANT/BREASTFEEDING
+                        pregnant = female.query(
+                            ' CurrentPregnancyStatus == "Breastfeeding" | CurrentPregnancyStatus =="Pregnant" ')
+
+                        p = pregnant['Current_Age'].apply(condition)
 
                         # fin = pd.DataFrame(["female",d])
                         st.subheader('Child 1st Line ARV')
@@ -732,8 +779,8 @@ def main():
                         child2_end_date = st.date_input(
                             "To",)
 
-                        pharm_start = clinic[(clinic['Pharmacy_LastPickupdate'] >= str(child2_start_date)) &  # type: ignore
-                                             (clinic['Pharmacy_LastPickupdate'] <= str(child2_end_date))]  # type: ignore
+                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(child2_start_date)) &  # type: ignore
+                                         (df['Pharmacy_LastPickupdate'] <= str(child2_end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -753,6 +800,11 @@ def main():
                             'Sex == "M" & CurrentARTStatus_Pharmacy =="Active" & CurrentRegimenLine == "Child 2nd line ARV regimen" ')
 
                         m = male['Current_Age'].apply(condition)
+
+                        pregnant = female.query(
+                            ' CurrentPregnancyStatus == "Breastfeeding" | CurrentPregnancyStatus =="Pregnant" ')
+
+                        p = pregnant['Current_Age'].apply(condition)
 
                         st.subheader('Child 2nd Line ARV')
                         output()

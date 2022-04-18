@@ -1,4 +1,3 @@
-from pickletools import int4
 import numpy as np
 import streamlit as st
 import pandas as pd
@@ -83,6 +82,11 @@ def main():
                            (df['Outcomes_Date'] <= str(end_date))]  # type: ignore
         outcomes_date = outcomes_date['Outcomes_Date'].count()
         return outcomes_date
+    def firstDate():
+        firstDate.start_date = st.date_input( "From",)
+
+    def SecondDate():
+        SecondDate.end_date = st.date_input("To",)
 
     activities = ['', 'Treatment Current', 'Treatment New', 'Treatment PVLS',
                   'Pharmcay Reporting']
@@ -92,7 +96,7 @@ def main():
     with st.sidebar:
         selected = option_menu(
             menu_title='Main Menu',  # required
-            options=['Monitoring', 'Reports', 'Task', 'Feedback'],
+            options=['Monitoring', 'Reports', 'EMR vs NDR', 'Feedback'],
             icons=['pie-chart-fill', 'book',
                    'list-task', 'chat-square-text-fill'],
             menu_icon='cast',
@@ -328,6 +332,24 @@ def main():
                         # st.write(d)
 
                         # info.value_counts()
+                    
+                if choice == 'Treatment PVLS':
+                    dt1, dt2 = st.columns(2)
+                    df['DateofCurrentViralLoad'] = pd.to_datetime(df.DateofCurrentViralLoad, format='%d/%m/%Y')
+                    
+                    with dt1:
+                        # start date
+                        firstDate()
+        
+                    with dt2:
+                        # end date
+                        SecondDate()
+                        
+                    st.write(firstDate.start_date,SecondDate.end_date)
+
+                    treatmentPvls = df.query('DateofCurrentViralLoad >= @firstDate.start_date &  DateofCurrentViralLoad <= @SecondDate.end_date ')
+                    treatmentPvls = treatmentPvls['DateofCurrentViralLoad'].count()
+                    st.info(treatmentPvls)
 
 
 # REPORT MODULES
@@ -554,21 +576,20 @@ def main():
 
 #####################Viral load result@@###############################
                 if option == 'VL Test Results':
+            
                     with dt1:
                         # start date
-                        vl_start_date = st.date_input(
-                            "From",)
+                        firstDate()
+        
                     with dt2:
                         # end date
-                        vl_end_date = st.date_input(
-                            "To",)
+                        SecondDate()
 
-                    art_start = df[(df['DateofCurrentViralLoad'] >= str(vl_start_date)) &  # type: ignore
-                                   (df['DateofCurrentViralLoad'] <= str(vl_end_date))]  # type: ignore
+                    art_start = df[(df['DateofCurrentViralLoad'] >= str(firstDate.start_date)) &  # type: ignore
+                                   (df['DateofCurrentViralLoad'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
-
                     if pharm_start_count == 0:
                         pass
                     else:
@@ -813,13 +834,19 @@ def main():
                         st.subheader('Child 2nd Line ARV')
                         output()
 
+    if selected == 'EMR vs NDR':
+        emr = st.file_uploader("STEP 1: Upload EMR Linelist")
+        ndr = st.file_uploader("STEP 2: Upload NDR Linelist")
+        if emr is not None:
+            pass
+
     if selected == 'Feedback':
-        st.write('feedback')
-        import numpy as np
+        st.markdown('<p class="font">GOT A FEW MINUTES TO HELP ?</p>',
+                    unsafe_allow_html=True)
+        st.subheader('Help us improve!!!.')
+        st.subheader(
+            'Tell us what you think of our webapp. We welcome your feedback')
 
-
-if __name__ == '__main__':
-    main()
 
 hide_streamlit_style = """
             <style>
@@ -829,3 +856,6 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+if __name__ == '__main__':
+    main()
+

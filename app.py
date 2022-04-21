@@ -1,4 +1,3 @@
-import numpy as np
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,6 +5,10 @@ import plotly.express as px
 from datetime import date, datetime, timedelta
 from streamlit_option_menu import option_menu
 from dateutil.relativedelta import relativedelta, MO
+from pyecharts import options as opts
+from pyecharts.charts import Bar
+from streamlit_echarts import st_pyecharts,st_echarts
+import streamlit.components.v1 as components
 
 
 st.set_page_config(page_title="Report Dashbooard 💻", page_icon="📑", layout="wide",
@@ -16,7 +19,7 @@ with open('style.css') as f:
 
 
 def main():
-
+    
     def condition(age):
         if age >= 5 and age <= 9:
             return "5 - 9"
@@ -82,11 +85,16 @@ def main():
                            (df['Outcomes_Date'] <= str(end_date))]  # type: ignore
         outcomes_date = outcomes_date['Outcomes_Date'].count()
         return outcomes_date
+    
+######################### DATE FUNCTION###############################
     def firstDate():
         firstDate.start_date = st.date_input( "From",)
 
     def SecondDate():
         SecondDate.end_date = st.date_input("To",)
+    
+
+
 
     activities = ['', 'Treatment Current', 'Treatment New', 'Treatment PVLS',
                   'Pharmcay Reporting']
@@ -114,11 +122,17 @@ def main():
             txnewContainer = st.container()
 
             data = st.file_uploader(
-                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv']) 
 
             if data is not None:
+            
+                @st.cache(allow_output_mutation=True)
+                def load_data1():
 
-                df = pd.read_csv(data)
+                    df = pd.read_csv(data, encoding = 'unicode_escape')
+                    df = df.replace(to_replace ='\\\\N' , value= '', regex= True)
+                    return df
+                df = load_data1() 
 
                 choice = st.selectbox(
                     'What would you like to Analyse?', activities)
@@ -133,7 +147,7 @@ def main():
 
                         df['Ref_Date'] = datetime.now().date()
                         df['ARTStartDate'] = pd.to_datetime(
-                            df.ARTStartDate, format='%d/%m/%Y')
+                            df.ARTStartDate)
 
                         df['ARTStartDate'] = df['ARTStartDate'].dt.date
                         df['DaysOnart'] = (
@@ -151,7 +165,7 @@ def main():
                         endDate = datetime.now().date() + timedelta(days=-365)
 
                         daysOnArt['DateofCurrentViralLoad'] = pd.to_datetime(
-                            daysOnArt.DateofCurrentViralLoad, format='%d/%m/%Y')
+                            daysOnArt.DateofCurrentViralLoad)
                         daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad'].dt.date
 
                         vl_documented = daysOnArt.query(
@@ -160,6 +174,7 @@ def main():
                         documentedViralload = vl_documented['PepID'].count()
 
     #######################SUPPRESSED VL ####################
+                        vl_documented['CurrentViralLoad'] = vl_documented['CurrentViralLoad'].astype(float)
                         suppressedVl = vl_documented.query(
                             'CurrentViralLoad < 1000')
                         suppressedVl = suppressedVl.CurrentViralLoad.count()
@@ -168,13 +183,13 @@ def main():
                         suppressionRate = (
                             suppressedVl/documentedViralload) * 100
                         suppressionRate = suppressionRate.round(
-                            2).astype(str) + "%"
+                            2)
 
     #######################VL COVERAGE ####################
                         vlCoverage = (documentedViralload /
                                       viralLoadEligible) * 100
                         vlCoverage = vlCoverage.round(  # type: ignore
-                            2).astype(str) + "%"  # type: ignore
+                            2) # type: ignore
 
                         outcomes = df.query(
                             'CurrentARTStatus_Pharmacy == "Active" & Outcomes != "" ')
@@ -208,12 +223,12 @@ def main():
                                         </div>
                                         <div class="card">
                                             <div class="title">
-                                            VL Coverage<span>{vlCoverage}</span>
+                                            VL Coverage<span>{vlCoverage}%</span>
                                             </div>
                                         </div>
                                         <div class="card">
                                             <div class="title">
-                                            VL Suppression <span>{suppressionRate}</span>
+                                            VL Suppression <span>{suppressionRate}%</span>
                                             </div>
                                             <div class="content">
                                         </div>
@@ -221,35 +236,35 @@ def main():
                                         """, unsafe_allow_html=True)
 
                         if outcomes['Outcomes'].count() == 0:
-                            pass
+                            st.info('Nothing to Display')
                         else:
                             out = outcomes['Outcomes'].count()
 
                             st.markdown(f'<p class="caution">Dear User,<br> You have {out} Active Patients which they also have other Outcomes. See their Status below</p>',
                                         unsafe_allow_html=True)
 
-                        active['Outcomes'] = active['Outcomes'].str.lower()
-                        q = active.query(
-                            ' Outcomes == "transferred out" | Outcomes == "death" | Outcomes == "discontinued Care" ')
+                            active['Outcomes'] = active['Outcomes'].str.lower()
+                            q = active.query(
+                                ' Outcomes == "transferred out" | Outcomes == "death" | Outcomes == "discontinued Care" ')
 
-                        col = q[['PepID', 'ARTStartDate', 'Sex',
-                                'Pharmacy_LastPickupdate', 'DaysOfARVRefill', 'CurrentARTRegimen', 'CurrentARTStatus_Pharmacy', 'Outcomes', 'Outcomes_Date']]
+                            col = q[['PepID', 'ARTStartDate', 'Sex',
+                                    'Pharmacy_LastPickupdate', 'DaysOfARVRefill', 'CurrentARTRegimen', 'CurrentARTStatus_Pharmacy', 'Outcomes', 'Outcomes_Date']]
 
-                        index_no = col.reset_index(drop=True)
-                        index_no
+                            index_no = col.reset_index(drop=True)
+                            index_no
 
-                        pie_chart = df['CurrentARTStatus_Pharmacy'].value_counts()
-                        names = ['Active', 'LTFU']
-                        label = px.pie(values=pie_chart, names=names, hole=.3,
-                                       color_discrete_sequence=px.colors.sequential.RdBu)
-                        st.write(label)
+                        # pie_chart = df['CurrentARTStatus_Pharmacy'].value_counts()
+                        # names = ['Active', 'LTFU']
+                        # label = px.pie(values=pie_chart, names=names, hole=.3,
+                        #                color_discrete_sequence=px.colors.sequential.RdBu)
+                        # st.write(label)
                 
                 if choice == 'Treatment New':
 
                     if data is not None:
 
                         df['ARTStartDate'] = pd.to_datetime(
-                            df.ARTStartDate, format='%d/%m/%Y')
+                            df.ARTStartDate)
 
                         # df['ARTStartDate'] = df['ARTStartDate'].dt.strftime('%d/%m/%Y')
                         infer_datetime_format = True
@@ -264,9 +279,9 @@ def main():
                             # end date
                             end_date = st.date_input(
                                 "To",)
-
+                            
                         art_start = artStart()
-                        art_start_count = art_start['IP'].count()
+                        art_start_count = art_start['PepID'].count()
                         pbs = art_start.query('PBS == "Yes" ')
                         pbs = pbs['PBS'].count()
 
@@ -364,16 +379,21 @@ def main():
             'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
 
         if report is not None:
-            df = pd.read_csv(report)
-
+            @st.cache(allow_output_mutation=True)
+            def load_data2():
+                df = pd.read_csv(report, encoding = 'unicode_escape')
+                df = df.replace(to_replace ='\\\\N' , value= '', regex= True)
+                return df
+            df = load_data2() 
+                
             df['Pharmacy_LastPickupdate'] = pd.to_datetime(
-                df.Pharmacy_LastPickupdate, format='%d/%m/%Y')
+                df.Pharmacy_LastPickupdate)
 
             df['ARTStartDate'] = pd.to_datetime(
-                df.ARTStartDate, format='%d/%m/%Y')
+                df.ARTStartDate)
 
             df['DateofCurrentViralLoad'] = pd.to_datetime(
-                df.DateofCurrentViralLoad, format='%d/%m/%Y')
+                df.DateofCurrentViralLoad)
 
 
 ##############END OF FUNCTION########################
@@ -403,7 +423,7 @@ def main():
 
                 art_start = artStart()
 
-                art_start_count = art_start['IP'].count()
+                art_start_count = art_start['PepID'].count()
                 pharm_start = pharm()
 
                 pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
@@ -411,8 +431,9 @@ def main():
 
                 outcomes_date = outComes()
 
+                
                 df['LastPickupDateCal'] = pd.to_datetime(
-                    df['LastPickupDateCal'], format="%d/%m/%Y")
+                    df['LastPickupDateCal'])
 
                 df = df.query('CurrentARTStatus_Pharmacy =="Active" ')
                 # arvRefill = df['DaysOfARVRefill'].astype(int)
@@ -526,15 +547,14 @@ def main():
                         p = pregnant['Current_Age'].apply(condition)
 
                         st.subheader(
-                            f'df Attendance for the period of { start_date} to { end_date}')
+                            f'Attendance for the period of { start_date} to { end_date}')
                         # fin = pd.DataFrame(["female",d])
                         output()
 
 ######################### Treatment New ###########################
                 if option == 'Treatment New':
-
                     with dt1:
-                        # start date
+                     # start date
                         start_date = st.date_input(
                             "From",)
                     with dt2:
@@ -573,7 +593,7 @@ def main():
                         st.subheader(
                             f'Treatment New for the period of { start_date} to { end_date}')
                         output()
-
+                    
 #####################Viral load result@@###############################
                 if option == 'VL Test Results':
             
@@ -620,15 +640,14 @@ def main():
 
                     with dt1:
                         # start date
-                        su_start_date = st.date_input(
-                            "From",)
+                        firstDate()
+        
                     with dt2:
                         # end date
-                        su_end_date = st.date_input(
-                            "To",)
+                        SecondDate()
 
-                        art_start = df[(df['DateofCurrentViralLoad'] >= str(su_start_date)) &  # type: ignore
-                                       (df['DateofCurrentViralLoad'] <= str(su_end_date))]  # type: ignore
+                        art_start = df[(df['DateofCurrentViralLoad'] >= str(firstDate.start_date)) &  # type: ignore
+                                       (df['DateofCurrentViralLoad'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
@@ -663,15 +682,14 @@ def main():
 
                     with dt1:
                         # start date
-                        adult_start_date = st.date_input(
-                            "From",)
+                        firstDate()
+        
                     with dt2:
                         # end date
-                        adult_end_date = st.date_input(
-                            "To",)
+                        SecondDate()
 
-                    pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(adult_start_date)) &  # type: ignore
-                                     (df['Pharmacy_LastPickupdate'] <= str(adult_end_date))]  # type: ignore
+                    pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
+                                     (df['Pharmacy_LastPickupdate'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -708,15 +726,14 @@ def main():
 
                     with dt1:
                         # start date
-                        sec_start_date = st.date_input(
-                            "From",)
+                        firstDate()
+        
                     with dt2:
                         # end date
-                        sec_end_date = st.date_input(
-                            "To",)
+                        SecondDate()
 
-                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(sec_start_date)) &  # type: ignore
-                                         (df['Pharmacy_LastPickupdate'] <= str(sec_end_date))]  # type: ignore
+                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
+                                         (df['Pharmacy_LastPickupdate'] <= str(firstDate.end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -753,15 +770,14 @@ def main():
 
                     with dt1:
                         # start date
-                        child_start_date = st.date_input(
-                            "From",)
+                        firstDate()
+        
                     with dt2:
                         # end date
-                        child_end_date = st.date_input(
-                            "To",)
+                        SecondDate()
 
-                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(child_start_date)) & (  # type: ignore
-                            df['Pharmacy_LastPickupdate'] <= str(child_end_date))]  # type: ignore
+                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) & (  # type: ignore
+                            df['Pharmacy_LastPickupdate'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -797,15 +813,14 @@ def main():
 
                     with dt1:
                         # start date
-                        child2_start_date = st.date_input(
-                            "From",)
+                        firstDate()
+        
                     with dt2:
                         # end date
-                        child2_end_date = st.date_input(
-                            "To",)
+                        SecondDate()
 
-                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(child2_start_date)) &  # type: ignore
-                                         (df['Pharmacy_LastPickupdate'] <= str(child2_end_date))]  # type: ignore
+                        pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
+                                         (df['Pharmacy_LastPickupdate'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )

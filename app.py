@@ -96,7 +96,7 @@ def main():
     with st.sidebar:
         selected = option_menu(
             menu_title='Main Menu',  # required
-            options=['Monitoring', 'Reports', 'EMR vs NDR', 'Feedback'],
+            options=['Monitoring', 'Reports', 'EMR-NDR', 'Feedback'],
             icons=['pie-chart-fill', 'book',
                    'list-task', 'chat-square-text-fill'],
             menu_icon='cast',
@@ -243,7 +243,7 @@ def main():
                         label = px.pie(values=pie_chart, names=names, hole=.3,
                                        color_discrete_sequence=px.colors.sequential.RdBu)
                         st.write(label)
-
+                
                 if choice == 'Treatment New':
 
                     if data is not None:
@@ -834,11 +834,11 @@ def main():
                         st.subheader('Child 2nd Line ARV')
                         output()
 
-    if selected == 'EMR vs NDR':
-        emr = st.file_uploader("STEP 1: Upload EMR Linelist")
-        ndr = st.file_uploader("STEP 2: Upload NDR Linelist")
-        if emr is not None:
-            pass
+    if selected == 'EMR-NDR':
+        report = st.file_uploader(
+            'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+        
+        
 
     if selected == 'Feedback':
         st.markdown('<p class="font">GOT A FEW MINUTES TO HELP ?</p>',
@@ -856,6 +856,7 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 if __name__ == '__main__':
     main()
 

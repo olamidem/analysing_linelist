@@ -1,4 +1,5 @@
 import streamlit as st
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
@@ -6,8 +7,8 @@ from datetime import date, datetime, timedelta
 from streamlit_option_menu import option_menu
 from dateutil.relativedelta import relativedelta, MO
 from pyecharts import options as opts
-from pyecharts.charts import Bar
-from streamlit_echarts import st_pyecharts,st_echarts
+from pyecharts.charts import Bar,Pie,Liquid,Grid
+from pyecharts.globals import SymbolType
 import streamlit.components.v1 as components
 
 
@@ -58,11 +59,11 @@ def main():
 
         with colp:
             st.info("PREGNANT/B FEEDING")
-            st.write(p.value_counts())
+            st.write(p.value_counts())  # type: ignore
 
     def tx_curr():
         active = df.query(
-            'CurrentARTStatus_Pharmacy == "Active" ')
+            'CurrentARTStatus_Pharmacy == "Active" & Outcomes == ""  ')
         return active
 
     def count_active():
@@ -86,6 +87,9 @@ def main():
         outcomes_date = outcomes_date['Outcomes_Date'].count()
         return outcomes_date
     
+    def dateConverter(dateColumn):
+        return pd.to_datetime(dateColumn,format="%d/%m/%Y", errors = 'ignore')
+    
 ######################### DATE FUNCTION###############################
     def firstDate():
         firstDate.start_date = st.date_input( "From",)
@@ -93,7 +97,12 @@ def main():
     def SecondDate():
         SecondDate.end_date = st.date_input("To",)
     
-
+    def cleanDataSet():
+        df.replace(to_replace ='\\\\N' , value= '')
+        df['Outcomes'] = df['Outcomes'].replace(to_replace= np.nan, value= "")
+        df['ARTStartDate'] = df['ARTStartDate'].replace(to_replace= np.nan, value= "01/01/1900")
+        df['DateofCurrentViralLoad'] = df['DateofCurrentViralLoad'].replace(to_replace= np.nan, value= "01/01/1900")
+                    
 
 
     activities = ['', 'Treatment Current', 'Treatment New', 'Treatment PVLS',
@@ -128,49 +137,50 @@ def main():
             
                 @st.cache(allow_output_mutation=True)
                 def load_data1():
-
                     df = pd.read_csv(data, encoding = 'unicode_escape')
-                    df = df.replace(to_replace ='\\\\N' , value= '', regex= True)
                     return df
                 df = load_data1() 
+                
+                cleanDataSet()
 
                 choice = st.selectbox(
                     'What would you like to Analyse?', activities)
 
                 if choice == 'Treatment Current':
                     if choice is not None:
-
+                    
                         active = tx_curr()
                         treatmentCurrent = count_active()
 
         #######################ELIGIBLE ####################
-
+                        df = df.query('CurrentARTStatus_Pharmacy == "Active"  & ARTStartDate != ""')
                         df['Ref_Date'] = datetime.now().date()
-                        df['ARTStartDate'] = pd.to_datetime(
-                            df.ARTStartDate)
-
+                        
+                        df['ARTStartDate'] = dateConverter(df['ARTStartDate'])
+                        
                         df['ARTStartDate'] = df['ARTStartDate'].dt.date
                         df['DaysOnart'] = (
                             df['Ref_Date'] - df['ARTStartDate']).dt.days
-
+                        
                         daysOnArt = df.query(
                             ' DaysOnart >= 180  & CurrentARTStatus_Pharmacy == "Active" ')
                         viralLoadEligible = daysOnArt['DaysOnart'].count()
-
+                        
                         # st.write(daysOnArt.reset_index(drop=True))
                         # st.write(daysOnArt['DaysOnart'].count())
 
     ####################### DOCUMENTED VL ####################
                         startDate = datetime.now().date()
-                        endDate = datetime.now().date() + timedelta(days=-365)
+                        endDate = datetime.now().date() + timedelta(days=-364)
 
-                        daysOnArt['DateofCurrentViralLoad'] = pd.to_datetime(
-                            daysOnArt.DateofCurrentViralLoad)
-                        daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad'].dt.date
-
+                        daysOnArt['DateofCurrentViralLoad'] = dateConverter(daysOnArt.DateofCurrentViralLoad)
+                        
+                        daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad']
                         vl_documented = daysOnArt.query(
                             ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
-
+                        col = vl_documented 
+                        index_no = col.reset_index(drop=True)
+                        
                         documentedViralload = vl_documented['PepID'].count()
 
     #######################SUPPRESSED VL ####################
@@ -234,31 +244,55 @@ def main():
                                         </div>
                                         </div>
                                         """, unsafe_allow_html=True)
-
-                        if outcomes['Outcomes'].count() == 0:
-                            st.info('Nothing to Display')
-                        else:
-                            out = outcomes['Outcomes'].count()
-
-                            st.markdown(f'<p class="caution">Dear User,<br> You have {out} Active Patients which they also have other Outcomes. See their Status below</p>',
-                                        unsafe_allow_html=True)
-
-                            active['Outcomes'] = active['Outcomes'].str.lower()
-                            q = active.query(
-                                ' Outcomes == "transferred out" | Outcomes == "death" | Outcomes == "discontinued Care" ')
-
-                            col = q[['PepID', 'ARTStartDate', 'Sex',
-                                    'Pharmacy_LastPickupdate', 'DaysOfARVRefill', 'CurrentARTRegimen', 'CurrentARTStatus_Pharmacy', 'Outcomes', 'Outcomes_Date']]
-
-                            index_no = col.reset_index(drop=True)
-                            index_no
-
-                        # pie_chart = df['CurrentARTStatus_Pharmacy'].value_counts()
-                        # names = ['Active', 'LTFU']
-                        # label = px.pie(values=pie_chart, names=names, hole=.3,
-                        #                color_discrete_sequence=px.colors.sequential.RdBu)
-                        # st.write(label)
-                
+                            
+                        
+                        pieChart = {'Name':["TX_CURR", "Eligible", "Documented", "Suppressed"], 
+                              'values':[treatmentCurrent, viralLoadEligible,documentedViralload,suppressedVl]}
+                        pieChart = pd.DataFrame(pieChart)
+                        
+        
+                        p = (
+                                Pie()
+                                .add(
+                                    "",
+                                    [list(z) for z in zip(pieChart['Name'],pieChart['values'] )],
+                                    radius=["40%", "75%"],
+                                )
+                                .set_global_opts(
+                                    title_opts=opts.TitleOpts(title="Linelist"),
+                                    legend_opts=opts.LegendOpts(orient="vertical", pos_top="15%", pos_left="2%"),
+                                )
+                                .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
+                                .render_embed()
+                            )
+                        l = (
+                            Liquid()
+                            .add('lq', [vlCoverage/100], center=["25%", "50%"])
+                            .set_global_opts(
+                                title_opts = opts.TitleOpts(title ='VL Coverage', pos_left='15%')
+                            )
+                            
+                        )
+                        g = (
+                            Liquid()
+                            .add('lq', [suppressionRate/100],center=["80%", "50%"] )
+                            .set_global_opts(
+                                title_opts = opts.TitleOpts(title ='Supperession Rate', pos_left='70%')
+                            )
+                        
+                        )
+                        grid = Grid().add(l, grid_opts=opts.GridOpts()).add(g, grid_opts=opts.GridOpts())
+                        grid.render_embed()
+                        
+                        components.html(p, width=1000, height=500)
+                        components.html(grid.render_embed(), width=1000, height=500)
+                        # with pi1:
+                        #     components.html(l,width=1000, height=500)
+                        # with pi2:
+                        #     components.html(g,width=1000, height=500)
+                        
+                        
+                      
                 if choice == 'Treatment New':
 
                     if data is not None:
@@ -382,9 +416,10 @@ def main():
             @st.cache(allow_output_mutation=True)
             def load_data2():
                 df = pd.read_csv(report, encoding = 'unicode_escape')
-                df = df.replace(to_replace ='\\\\N' , value= '', regex= True)
+                
                 return df
             df = load_data2() 
+            cleanDataSet()
                 
             df['Pharmacy_LastPickupdate'] = pd.to_datetime(
                 df.Pharmacy_LastPickupdate)
@@ -418,6 +453,7 @@ def main():
                         "To",)
 
                 active = tx_curr()
+                treatmentCurrent = count_active()
 
                 treatmentCurrent = count_active()
 
@@ -871,7 +907,6 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 if __name__ == '__main__':
     main()
 

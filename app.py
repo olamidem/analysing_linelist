@@ -100,9 +100,12 @@ def main():
     def cleanDataSet():
         df.replace(to_replace ='\\\\N' , value= '')
         df['Outcomes'] = df['Outcomes'].replace(to_replace= np.nan, value= "")
+        df['PhoneNo'] =  df['PhoneNo'].replace(to_replace= ['null','NONE','NIL','NIL.'], value= "")
         df['ARTStartDate'] = df['ARTStartDate'].replace(to_replace= np.nan, value= "01/01/1900")
         df['DateofCurrentViralLoad'] = df['DateofCurrentViralLoad'].replace(to_replace= np.nan, value= "01/01/1900")
-                    
+    def fileName(name):
+        fileName = data.name
+        st.header(fileName)               
 
 
     activities = ['', 'Treatment Current', 'Treatment New', 'Treatment PVLS',
@@ -129,83 +132,123 @@ def main():
             all_card = st.container()
             ####################### TREATMENT NEW CONTAINER###################
             txnewContainer = st.container()
-
-            data = st.file_uploader(
-                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv']) 
-
-            if data is not None:
+            placeholder =st.empty()
             
-                @st.cache(allow_output_mutation=True)
-                def load_data1():
-                    df = pd.read_csv(data, encoding = 'unicode_escape')
-                    return df
-                df = load_data1() 
+        data = placeholder.file_uploader(
+                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+        st.session_state.data = data
+        if data is not None:
+            if data not in st.session_state:
+                st.session_state.data = data.name
+            placeholder.empty()
+            fileName(data)
+            @st.cache(allow_output_mutation=True)
+            def load_data1():
+                df = pd.read_csv(data, encoding = 'unicode_escape')
+                return df
                 
-                cleanDataSet()
-
-                choice = st.selectbox(
+            df = load_data1() 
+                
+            cleanDataSet()
+                
+            choice = st.selectbox(
                     'What would you like to Analyse?', activities)
-
-                if choice == 'Treatment Current':
-                    if choice is not None:
-                    
-                        active = tx_curr()
-                        treatmentCurrent = count_active()
-
+                
+            if choice == 'Treatment Current':
+                if choice is not None:
+                    active = tx_curr()
+                    treatmentCurrent = count_active()
+                        
         #######################ELIGIBLE ####################
-                        df = df.query('CurrentARTStatus_Pharmacy == "Active"  & ARTStartDate != ""')
-                        df['Ref_Date'] = datetime.now().date()
+                    df = df.query('CurrentARTStatus_Pharmacy == "Active"  & ARTStartDate != ""')
+                    df['Ref_Date'] = datetime.now().date()
                         
-                        df['ARTStartDate'] = dateConverter(df['ARTStartDate'])
+                    df['ARTStartDate'] = dateConverter(df['ARTStartDate'])
                         
-                        df['ARTStartDate'] = df['ARTStartDate'].dt.date
-                        df['DaysOnart'] = (
-                            df['Ref_Date'] - df['ARTStartDate']).dt.days
+                    df['ARTStartDate'] = df['ARTStartDate'].dt.date
+                    df['DaysOnart'] = (
+                    df['Ref_Date'] - df['ARTStartDate']).dt.days
                         
-                        daysOnArt = df.query(
+                    daysOnArt = df.query(
                             ' DaysOnart >= 180  & CurrentARTStatus_Pharmacy == "Active" ')
-                        viralLoadEligible = daysOnArt['DaysOnart'].count()
+                    viralLoadEligible = daysOnArt['DaysOnart'].count()
                         
                         # st.write(daysOnArt.reset_index(drop=True))
                         # st.write(daysOnArt['DaysOnart'].count())
 
     ####################### DOCUMENTED VL ####################
-                        startDate = datetime.now().date()
-                        endDate = datetime.now().date() + timedelta(days=-364)
+                    startDate = datetime.now().date()
+                    endDate = datetime.now().date() + timedelta(days=-364)
 
-                        daysOnArt['DateofCurrentViralLoad'] = dateConverter(daysOnArt.DateofCurrentViralLoad)
+                    daysOnArt['DateofCurrentViralLoad'] = dateConverter(daysOnArt.DateofCurrentViralLoad)
                         
-                        daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad']
-                        vl_documented = daysOnArt.query(
+                    daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad']
+                    vl_documented = daysOnArt.query(
                             ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
-                        col = vl_documented 
-                        index_no = col.reset_index(drop=True)
+                    col = vl_documented 
+                    index_no = col.reset_index(drop=True)
                         
-                        documentedViralload = vl_documented['PepID'].count()
+                    documentedViralload = vl_documented['PepID'].count()
 
     #######################SUPPRESSED VL ####################
-                        vl_documented['CurrentViralLoad'] = vl_documented['CurrentViralLoad'].astype(float)
-                        suppressedVl = vl_documented.query(
+                    vl_documented['CurrentViralLoad'] = vl_documented['CurrentViralLoad'].astype(float)
+                    suppressedVl = vl_documented.query(
                             'CurrentViralLoad < 1000')
-                        suppressedVl = suppressedVl.CurrentViralLoad.count()
+                    suppressedVl = suppressedVl.CurrentViralLoad.count()
 
     #######################SUPPRESSION RATE ####################
-                        suppressionRate = (
-                            suppressedVl/documentedViralload) * 100
-                        suppressionRate = suppressionRate.round(
-                            2)
+                    suppressionRate = ( suppressedVl/documentedViralload) * 100
+                    suppressionRate = suppressionRate.round(2)
 
     #######################VL COVERAGE ####################
-                        vlCoverage = (documentedViralload /
-                                      viralLoadEligible) * 100
-                        vlCoverage = vlCoverage.round(  # type: ignore
-                            2) # type: ignore
-
+                    vlCoverage = (documentedViralload /viralLoadEligible) * 100
+                    vlCoverage = vlCoverage.round(2) # type: ignore
+    
+    #######################END VL COVERAGE ####################
+                        
+    #######################FILTER BY STATE####################
+                        
+                    states = df['State'].unique()
+                    filterByState = st.checkbox('Filter by State')
+                    col1,col2,col3= st.columns(3)
+                        
+                    if filterByState:
+                        with col1:
+                            states = st.selectbox('What would you like to Analyse?', states)
+                            state = df.query('State == @states')
+                            lgas = state['LGA'].unique()
+                        with col2:
+                            lgas = st.selectbox('What would you like to Analyse?', lgas)
+                            facility = state.query('LGA == @lgas')
+                            facilities = facility['FacilityName'].unique()
+                        with col3:
+                            facilities = st.selectbox('What would you like to Analyse?', facilities)
+                            facilities = state.query('FacilityName == @facilities')
+                            
+                            
+                        def txCurr():
+                            return facilities.query('CurrentARTStatus_Pharmacy == "Active" & Outcomes == "" ')
+                            
+                        def state_txCurr():
+                            return state.query('CurrentARTStatus_Pharmacy == "Active" & Outcomes == "" ')
+                            
+                        stateTxCurr = state_txCurr()
+                        stateTxCurr = stateTxCurr['State'].value_counts()
+                        stateTxCurr
+                            
+                        txCurrent = txCurr()
+                        txCurrentByState = txCurrent['State'].value_counts()
+                        txCurrentByState
+                        txCurrentByFacilities = txCurrent['FacilityName'].value_counts()
+                        txCurrentByFacilities    
+                            
+                            
+                        #     pass
                         outcomes = df.query(
                             'CurrentARTStatus_Pharmacy == "Active" & Outcomes != "" ')
 
-                        with all_card:
-                            st.markdown(f"""
+                    with all_card:
+                        st.markdown(f"""
                                         <marquee><h4>Below shown here use Date as of today</h4></marquee>
                                         <div class="container">
                                         <div class="card">
@@ -246,46 +289,46 @@ def main():
                                         """, unsafe_allow_html=True)
                             
                         
-                        pieChart = {'Name':["TX_CURR", "Eligible", "Documented", "Suppressed"], 
+                    pieChart = {'Name':["TX_CURR", "Eligible", "Documented", "Suppressed"], 
                               'values':[treatmentCurrent, viralLoadEligible,documentedViralload,suppressedVl]}
-                        pieChart = pd.DataFrame(pieChart)
+                    pieChart = pd.DataFrame(pieChart)
                         
         
-                        p = (
-                                Pie()
+                    p = (
+                            Pie(init_opts=opts.InitOpts(width="1200px", height="800px"))
                                 .add(
                                     "",
                                     [list(z) for z in zip(pieChart['Name'],pieChart['values'] )],
                                     radius=["40%", "75%"],
                                 )
-                                .set_global_opts(
-                                    title_opts=opts.TitleOpts(title="Linelist"),
-                                    legend_opts=opts.LegendOpts(orient="vertical", pos_top="15%", pos_left="2%"),
+                                .set_colors([ "green", "red", "orange", "purple"])
+                                
+                                .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=20)
+                                
                                 )
-                                .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
                                 .render_embed()
                             )
-                        l = (
-                            Liquid()
-                            .add('lq', [vlCoverage/100], center=["25%", "50%"])
-                            .set_global_opts(
-                                title_opts = opts.TitleOpts(title ='VL Coverage', pos_left='15%')
-                            )
+                        # l = (
+                        #     Liquid()
+                        #     .add('lq', [vlCoverage/100], center=["25%", "50%"])
+                        #     .set_global_opts(
+                        #         title_opts = opts.TitleOpts(title ='VL Coverage', pos_left='15%')
+                        #     )
                             
-                        )
-                        g = (
-                            Liquid()
-                            .add('lq', [suppressionRate/100],center=["80%", "50%"] )
-                            .set_global_opts(
-                                title_opts = opts.TitleOpts(title ='Supperession Rate', pos_left='70%')
-                            )
+                        # )
+                        # g = (
+                        #     Liquid()
+                        #     .add('lq', [suppressionRate/100],center=["80%", "50%"] )
+                        #     .set_global_opts(
+                        #         title_opts = opts.TitleOpts(title ='Supperession Rate', pos_left='70%')
+                        #     )
                         
-                        )
-                        grid = Grid().add(l, grid_opts=opts.GridOpts()).add(g, grid_opts=opts.GridOpts())
-                        grid.render_embed()
+                        # )
+                        # grid = Grid().add(l, grid_opts=opts.GridOpts()).add(g, grid_opts=opts.GridOpts())
+                        # grid.render_embed()
                         
-                        components.html(p, width=1000, height=500)
-                        components.html(grid.render_embed(), width=1000, height=500)
+                    components.html(p, width=1200, height=800)
+                        # components.html(grid.render_embed(), width=1000, height=500)
                         # with pi1:
                         #     components.html(l,width=1000, height=500)
                         # with pi2:
@@ -296,6 +339,7 @@ def main():
                 if choice == 'Treatment New':
 
                     if data is not None:
+                        placeholder.empty()
 
                         df['ARTStartDate'] = pd.to_datetime(
                             df.ARTStartDate)
@@ -360,58 +404,49 @@ def main():
                                         </div>
                                         """, unsafe_allow_html=True)
 
-                        # st.dataframe(art_start)
-                        art_start['ARTStartDate'] = art_start['ARTStartDate'].dt.strftime(
-                            '%d/%m/%Y')
-                        info = art_start[['Sex', 'PepID',
-                                          'ARTStartDate',
-                                          'Pharmacy_LastPickupdate',
-                                          'DaysOfARVRefill', 'CurrentARTRegimen', 'Current_Age', 'FirstCD4', 'CurrentINHReceived',
-                                          'Current_TB_Status', 'PBS', 'IPT_Screening_Date', ]]
-
-                        info_options = st.multiselect(
-                            'Select Data to Analyze',
-                            info.columns)
-                        mask = art_start[info_options]
-
-                        mask = mask.reset_index(drop=True)
-                        mask
-
-                        # d = info.groupby("PepID").count()
-                        # st.write(d)
-
-                        # info.value_counts()
                     
                 if choice == 'Treatment PVLS':
-                    dt1, dt2 = st.columns(2)
-                    df['DateofCurrentViralLoad'] = pd.to_datetime(df.DateofCurrentViralLoad, format='%d/%m/%Y')
-                    
-                    with dt1:
-                        # start date
-                        firstDate()
-        
-                    with dt2:
-                        # end date
-                        SecondDate()
+                    if choice is not None:
+                        placeholder.empty()
+                        dt1, dt2 = st.columns(2)
+                        df['DateofCurrentViralLoad'] = pd.to_datetime(df.DateofCurrentViralLoad, format='%d/%m/%Y')
                         
-                    st.write(firstDate.start_date,SecondDate.end_date)
+                        with dt1:
+                            # start date
+                            firstDate()
+            
+                        with dt2:
+                            # end date
+                            SecondDate()
+                            
+                        st.write(firstDate.start_date,SecondDate.end_date)
 
-                    treatmentPvls = df.query('DateofCurrentViralLoad >= @firstDate.start_date &  DateofCurrentViralLoad <= @SecondDate.end_date ')
-                    treatmentPvls = treatmentPvls['DateofCurrentViralLoad'].count()
-                    st.info(treatmentPvls)
-
+                        treatmentPvls = df.query('DateofCurrentViralLoad >= @firstDate.start_date &  DateofCurrentViralLoad <= @SecondDate.end_date ')
+                        treatmentPvls = treatmentPvls['DateofCurrentViralLoad'].count()
+                        st.info(treatmentPvls)
+        
 
 # REPORT MODULES
 
     if selected == 'Reports':
+        
+        
         st.markdown('<p class="font">Reports Dashbooard✍</p>',
                     unsafe_allow_html=True)
-
         ########## FOR DISPLAYING THE CARDS##################
         weekly_display = st.container()
-        report = st.file_uploader(
+        
+        placeholder = st.empty()
+        if st.session_state.data is not None:
+            st.header(st.session_state.data)
+           
+            
+            report = placeholder.file_uploader(
+                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+            placeholder.empty()
+        else:
+            report = placeholder.file_uploader(
             'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
-
         if report is not None:
             @st.cache(allow_output_mutation=True)
             def load_data2():
@@ -436,12 +471,9 @@ def main():
             report_type = st.selectbox(
                 'What would you like to Analyse?', reports)
 
-            if report_type == '':
-                pass
-
 ##############&E Weekly Report########################
             if report_type == 'M&E Weekly Report':
-
+            
                 dt1, dt2 = st.columns(2)
                 with dt1:
                  # start date
@@ -451,6 +483,7 @@ def main():
                     # end date
                     end_date = st.date_input(
                         "To",)
+                
 
                 active = tx_curr()
                 treatmentCurrent = count_active()
@@ -466,7 +499,7 @@ def main():
                 )
 
                 outcomes_date = outComes()
-
+                placeholder.empty()
                 
                 df['LastPickupDateCal'] = pd.to_datetime(
                     df['LastPickupDateCal'])
@@ -886,8 +919,26 @@ def main():
                         output()
 
     if selected == 'EMR-NDR':
-        report = st.file_uploader(
-            'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+        
+        emr = st.file_uploader(
+            'STEP 1: UPLOAD EMR LINELIST 🙏🙏🙏🙏', type=['csv'])
+        
+        ndr = st.file_uploader(
+            'STEP 2: UPLOAD NDR LINELIST 🙏🙏🙏🙏', type=['csv'])
+
+# Replace the placeholder with some text:
+        # placeholder.text("Hello")
+
+        # # Replace the text with a chart:
+        # placeholder.line_chart({"data": [1, 5, 2, 6]})
+
+        # # Replace the chart with several elements:
+        # with placeholder.container():
+        #     st.write("This is one element")
+        #     st.write("This is another")
+
+        # # Clear all those elements:
+        
         
         
 
@@ -899,14 +950,14 @@ def main():
             'Tell us what you think of our webapp. We welcome your feedback')
 
 
-hide_streamlit_style = """
+hide_streamlit_style ="""
             <style>
             # MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             # header {visibility: hidden;}
             </style>
             """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.markdown(hide_streamlit_style,unsafe_allow_html=True)
 if __name__ == '__main__':
     main()
 

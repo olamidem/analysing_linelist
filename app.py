@@ -240,7 +240,7 @@ def main():
                         
                         txCurrent = tx_curr(facilities)
                         txCurrentByState = txCurrent['FacilityName'].value_counts()
-                        txCurrentByState
+                        st.write(txCurrentByState)
                         #####State facilityEligible###########
                         facilityEligible = viralLoadEligible(lgas)
                         facilityEligible = facilityEligible['FacilityName'].value_counts()

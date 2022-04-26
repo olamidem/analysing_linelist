@@ -19,23 +19,23 @@ with open('style.css') as f:
 
 def main():
     def condition(age):
-        if age >= 5 and age <= 9:
+        if 5 <= age <= 9:
             return "5 - 9"
-        elif age >= 10 and age <= 14:
+        elif 10 <= age <= 14:
             return "10 - 14"
-        elif age >= 15 and age <= 19:
+        elif 15 <= age <= 19:
             return "15 - 19"
-        elif age >= 20 and age <= 24:
+        elif 20 <= age <= 24:
             return "20 - 24"
-        elif age >= 25 and age <= 29:
+        elif 25 <= age <= 29:
             return "25 - 29"
-        elif age >= 30 and age <= 34:
+        elif 30 <= age <= 34:
             return "30 - 34"
-        elif age >= 35 and age <= 39:
+        elif 35 <= age <= 39:
             return "35 - 39"
-        elif age >= 40 and age <= 44:
+        elif 40 <= age <= 44:
             return "40 - 44"
-        elif age >= 45 and age <= 49:
+        elif 45 <= age <= 49:
             return "45 - 49"
         elif age >= 50:
             return "50+"
@@ -100,6 +100,7 @@ def main():
         df['PhoneNo'] = df['PhoneNo'].replace(to_replace=['null', 'NONE', 'NIL', 'NIL.'], value="")
         df['ARTStartDate'] = df['ARTStartDate'].replace(to_replace=np.nan, value="01/01/1900")
         df['DateofCurrentViralLoad'] = df['DateofCurrentViralLoad'].replace(to_replace=np.nan, value="01/01/1900")
+        df['Current_Age'] = df['Current_Age'].replace(to_replace=np.nan, value=0)
         df['PhoneNo'] = df['PhoneNo'].astype(str)
 
     def fileName(name):
@@ -108,6 +109,34 @@ def main():
 
     ###### To set the locale environment to Default OS location################
     locale.setlocale(locale.LC_ALL, '')
+
+    def filterBy(df):
+        filterByState = st.checkbox('Filter by State')
+        states = df['State'].unique()
+        col1, col2, col3 = st.columns(3)
+        return col1, col2, col3, filterByState, states
+
+    def selectState(df, states):
+        select_state = st.multiselect(
+            'Select one or more States', states, key='states'
+        )
+        state = df.query('State == @select_state')
+        lgas = state['LGA'].unique()
+        return lgas, state
+
+    def selectLga(lgas, state):
+        select_lgas = st.multiselect(
+            'Select one or more LGAs', lgas, key='lgas'
+        )
+        lgas = state.query('LGA == @select_lgas')
+        facilities = lgas['FacilityName'].unique()
+        return facilities
+
+    def selectFacilities(facilities, state):
+        select_facilities = st.multiselect(
+            'WSelect one or more Facilities', facilities, key='facilities'
+        )
+        facilities = state.query('FacilityName == @select_facilities')
 
     activities = ['', 'Treatment Current', 'Treatment New', 'Viral-Load Cascade',
                   'Clinical Report']
@@ -152,6 +181,8 @@ def main():
             df = load_data1()
             cleanDataSet()
 
+            report_date = st.date_input("Select your reporting date", )
+
             choice = st.selectbox(
                 'What would you like to Analyse?', activities)
 
@@ -168,7 +199,28 @@ def main():
                     tx_curr_female = treatmentCurrent.query('Sex == "F" ')
                     countFemale = tx_curr_female['Sex'].count()
 
-                    # st.write(firstDate.start_date, SecondDate.end_date)
+                    adult = treatmentCurrent.query('Current_Age >= 20 ')
+                    countAdult = adult['Current_Age'].count()
+
+                    adolescent = treatmentCurrent.query('Current_Age >=10 & Current_Age <= 19 ')
+                    countAdolescent = adolescent['Current_Age'].count()
+
+                    paed = treatmentCurrent.query('Current_Age <10 ')
+                    countPaed = paed['Current_Age'].count()
+
+                    df = tx_curr(df)
+                    col1, col2, col3, filterByState, states = filterBy(df)
+
+                    if filterByState:
+                        with col1:
+                            lgas, state = selectState(df, states)
+
+                        with col2:
+                            facilities = selectLga(lgas, state)
+
+                        with col3:
+                            selectFacilities(facilities, state)
+
                     with all_card:
                         st.markdown(f"""
                                         <div class="container">
@@ -192,57 +244,26 @@ def main():
 
                                         <div class="card">
                                             <div class="title">
-                                        Adult<span>{0}</span>
+                                        Adult<span>{"{0:n}".format(countAdult)}</span>
                                             </div>
                                         </div>
                                         <div class="card">
                                             <div class="title">
-                                         Adolescent<span>{0}</span>
+                                         Adolescent<span>{"{0:n}".format(countAdolescent)}</span>
                                             </div>
                                         </div>
                                         <div class="card">
                                             <div class="title">
-                                            Paed<span>{0}</span>
+                                            Paed<span>{"{0:n}".format(countPaed)}</span>
                                             </div>
                                             <div class="content">
                                         </div>
                                         </div>
                                         """, unsafe_allow_html=True)
 
-                    filterByState = st.checkbox('Filter by State')
-                    states = df['State'].unique()
-                    col1, col2, col3 = st.columns(3)
-
-                    if filterByState:
-                        with col1:
-                            states = st.multiselect(
-                                'What are your favorite colors',
-                                states, key='states'
-                            )
-                            state = df.query('State == @states')
-                            lgas = state['LGA'].unique()
-                            st.write(state)
-
-                        with col2:
-                            lgas = st.multiselect(
-                                'What are your favorite colors',
-                                lgas, key='lgas'
-                            )
-                            lgas = state.query('LGA == @lgas')
-                            facilities = lgas['FacilityName'].unique()
-                            st.write(lgas)
-
-                        with col3:
-                            facilities = st.multiselect(
-                                'What are your favorite colors',
-                                facilities, key='facilities'
-                            )
-                            facilities = state.query('FacilityName == @facilities')
-                            st.write(facilities)
 
             if choice == 'Viral-Load Cascade':
                 if choice is not None:
-                    report_date = st.date_input("Select your reporting date", )
                     treatmentCurrent = tx_curr(df)
                     treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
 
@@ -281,49 +302,22 @@ def main():
                     suppressedVl = suppressedVl.CurrentViralLoad.count()
 
                     # #######################SUPPRESSION RATE ####################
-                    suppressionRate = ((suppressedVl / documentedViralload) * 100).round()
+                    suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
 
                     # #######################VL COVERAGE ####################
-                    vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round()
+                    vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
 
-                    # # #######################FILTER BY STATE####################
-                    # col1, col2, col3, filterByState, states = filterBY(df)
-                    #
-                    # if filterByState:
-                    #     with col1:
-                    #         lgas, state = chooseState(df, states)
-                    #     with col2:
-                    #         facilities, lgas = chooseLga(lgas, state)
-                    #     with col3:
-                    #         facilities = chooseFacility(facilities, state)
-                    #
-                    #     #####State Treatment Current###########
-                    #     stateTxCurr = tx_curr(state)
-                    #     stateTxCurr = stateTxCurr['State'].value_counts()
-                    #     st.write(stateTxCurr)
-                    #
-                    #     #####State viralLoadEligible###########
-                    #     stateEligible = viralLoadEligible(state)
-                    #     stateEligible = stateEligible['State'].value_counts()
-                    #     st.write(stateEligible)
-                    #
-                    #     ###### LGA's Treatment Current#####
-                    #     lgaTreatmentCurrent = tx_curr(lgas)
-                    #     lgaTreatmentCurrent = lgaTreatmentCurrent['LGA'].value_counts()
-                    #     st.write(lgaTreatmentCurrent)
-                    #
-                    #     #####lGA's Eligible###########
-                    #     lgasEligible = viralLoadEligible(lgas)
-                    #     lgasEligible = lgasEligible['LGA'].value_counts()
-                    #     st.write(lgasEligible)
-                    #
-                    #     txCurrent = tx_curr(facilities)
-                    #     txCurrentByState = txCurrent['FacilityName'].value_counts()
-                    #     st.write(txCurrentByState)
-                    #     #####State facilityEligible###########
-                    #     facilityEligible = viralLoadEligible(facilities)
-                    #     facilityEligible = facilityEligible['FacilityName'].value_counts()
-                    #     st.write(facilityEligible)
+                    df = tx_curr(df)
+                    col1, col2, col3, filterByState, states = filterBy(df)
+                    if filterByState:
+                        with col1:
+                            lgas, state = selectState(df, states)
+
+                        with col2:
+                            facilities = selectLga(lgas, state)
+
+                        with col3:
+                            selectFacilities(facilities, state)
 
                     with all_card:
                         st.markdown(f"""
@@ -364,6 +358,7 @@ def main():
                                         </div>
                                         </div>
                                         """, unsafe_allow_html=True)
+
 
                     pieChart = {'Name': ["TX_CURR", "Eligible", "Documented", "Suppressed"],
                                 'values': [treatmentCurrent, vLEligibleCount, documentedViralload, suppressedVl]}
@@ -481,16 +476,18 @@ def main():
                                         </div>
                                         </div>
                                         """, unsafe_allow_html=True)
-                    # col1, col2, col3, filterByState, states = filterBY(df)
-                    #
-                    # if filterByState:
-                    #     with col1:
-                    #         lgas, state = chooseState(df, states)
-                    #         st.write(state['State'].value_counts())
-                    #     with col2:
-                    #         facilities, lgas = chooseLga(lgas, state)
-                    #     with col3:
-                    #         facilities = chooseFacility(facilities, state)
+
+                    df = tx_curr(df)
+                    col1, col2, col3, filterByState, states = filterBy(df)
+                    if filterByState:
+                        with col1:
+                            lgas, state = selectState(df, states)
+
+                        with col2:
+                            facilities = selectLga(lgas, state)
+
+                        with col3:
+                            selectFacilities(facilities, state)
     # REPORT MODULES
 
     if selected == 'Reports':

@@ -129,8 +129,9 @@ def main():
             'Select one or more LGAs', lgas, key='lgas'
         )
         lgas = state.query('LGA == @select_lgas')
+        lga = lgas
         facilities = lgas['FacilityName'].unique()
-        return facilities
+        return facilities, lga
 
     def selectFacilities(facilities, state):
         select_facilities = st.multiselect(
@@ -157,8 +158,9 @@ def main():
         st.markdown('<p class="font">Monitoring Dashboard💻</p>',
                     unsafe_allow_html=True)
         ############MONITORING MODULES#######################################
-        montoring = st.container()
-        with montoring:
+
+        monitoring = st.container()
+        with monitoring:
             all_card = st.container()
             ####################### TREATMENT NEW CONTAINER###################
             txnewContainer = st.container()
@@ -191,22 +193,18 @@ def main():
                     placeholder.empty()
                     dt1, dt2 = st.columns(2)
                     treatmentCurrent = tx_curr(df)
-                    treatmentCurrent_count = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
 
-                    tx_curr_male = treatmentCurrent.query('Sex == "M" ')
-                    countMale = tx_curr_male['Sex'].count()
+                    treatmentCurrent_count = txCurr(treatmentCurrent)
 
-                    tx_curr_female = treatmentCurrent.query('Sex == "F" ')
-                    countFemale = tx_curr_female['Sex'].count()
+                    countMale = maleTxCurr(treatmentCurrent)
 
-                    adult = treatmentCurrent.query('Current_Age >= 20 ')
-                    countAdult = adult['Current_Age'].count()
+                    countFemale = femaleTxCurr(treatmentCurrent)
 
-                    adolescent = treatmentCurrent.query('Current_Age >=10 & Current_Age <= 19 ')
-                    countAdolescent = adolescent['Current_Age'].count()
+                    countAdult = adultTxCurr(treatmentCurrent)
 
-                    paed = treatmentCurrent.query('Current_Age <10 ')
-                    countPaed = paed['Current_Age'].count()
+                    countAdolescent = adolescentTxCurr(treatmentCurrent)
+
+                    countPaed = paedTxCurr(treatmentCurrent)
 
                     df = tx_curr(df)
                     col1, col2, col3, filterByState, states = filterBy(df)
@@ -214,12 +212,35 @@ def main():
                     if filterByState:
                         with col1:
                             lgas, state = selectState(df, states)
+                            treatmentCurrent_count = txCurr(state)
+
+                            countMale = maleTxCurr(state)
+
+                            countFemale = femaleTxCurr(state)
+
+                            countAdult = adultTxCurr(state)
+
+                            countAdolescent = adolescentTxCurr(state)
+
+                            countPaed = paedTxCurr(state)
 
                         with col2:
-                            facilities = selectLga(lgas, state)
+                            facilities, lga = selectLga(lgas, state)
 
+                            treatmentCurrent_count = txCurr(lga)
+
+                            countMale = maleTxCurr(lga)
+
+                            countFemale = femaleTxCurr(lga)
+
+                            countAdult = adultTxCurr(lga)
+
+                            countAdolescent = adolescentTxCurr(lga)
+
+                            countPaed = paedTxCurr(lga)
                         with col3:
                             selectFacilities(facilities, state)
+
 
                     with all_card:
                         st.markdown(f"""
@@ -260,7 +281,6 @@ def main():
                                         </div>
                                         </div>
                                         """, unsafe_allow_html=True)
-
 
             if choice == 'Viral-Load Cascade':
                 if choice is not None:
@@ -309,12 +329,13 @@ def main():
 
                     df = tx_curr(df)
                     col1, col2, col3, filterByState, states = filterBy(df)
+
                     if filterByState:
                         with col1:
                             lgas, state = selectState(df, states)
 
                         with col2:
-                            facilities = selectLga(lgas, state)
+                            facilities, lga = selectLga(lgas, state)
 
                         with col3:
                             selectFacilities(facilities, state)
@@ -358,7 +379,6 @@ def main():
                                         </div>
                                         </div>
                                         """, unsafe_allow_html=True)
-
 
                     pieChart = {'Name': ["TX_CURR", "Eligible", "Documented", "Suppressed"],
                                 'values': [treatmentCurrent, vLEligibleCount, documentedViralload, suppressedVl]}
@@ -479,12 +499,13 @@ def main():
 
                     df = tx_curr(df)
                     col1, col2, col3, filterByState, states = filterBy(df)
+
                     if filterByState:
                         with col1:
                             lgas, state = selectState(df, states)
 
                         with col2:
-                            facilities = selectLga(lgas, state)
+                            facilities, lga = selectLga(lgas, state)
 
                         with col3:
                             selectFacilities(facilities, state)
@@ -1002,6 +1023,41 @@ def main():
         st.subheader('Help us improve!!!.')
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
+
+
+def paedTxCurr(treatmentCurrent):
+    paed = treatmentCurrent.query('Current_Age <10 ')
+    countPaed = paed['Current_Age'].count()
+    return countPaed
+
+
+def adolescentTxCurr(treatmentCurrent):
+    adolescent = treatmentCurrent.query('Current_Age >=10 & Current_Age <= 19 ')
+    countAdolescent = adolescent['Current_Age'].count()
+    return countAdolescent
+
+
+def adultTxCurr(treatmentCurrent):
+    adult = treatmentCurrent.query('Current_Age >= 20 ')
+    countAdult = adult['Current_Age'].count()
+    return countAdult
+
+
+def femaleTxCurr(treatmentCurrent):
+    tx_curr_female = treatmentCurrent.query('Sex == "F" ')
+    countFemale = tx_curr_female['Sex'].count()
+    return countFemale
+
+
+def maleTxCurr(treatmentCurrent):
+    tx_curr_male = treatmentCurrent.query('Sex == "M" ')
+    countMale = tx_curr_male['Sex'].count()
+    return countMale
+
+
+def txCurr(treatmentCurrent):
+    treatmentCurrent_count = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+    return treatmentCurrent_count
 
 
 hide_streamlit_style = """

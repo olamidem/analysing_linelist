@@ -3,6 +3,16 @@ body {
   font-weight: 100px !important;
   font-size: 20px !important;
 }
+div.css-1xarl3l {
+    font-size: 1.4rem;
+    padding-bottom: 0.25rem;
+
+}
+label.css-5qhqlf {
+    font-size: 17px;
+    font-weight: bold;
+    font-family: "Bookman Old Style", Bookman Old Style;
+ }
 div.stDateInput{
     height:80px !important;
 }
@@ -283,4 +293,20 @@ div.css-8u98yl.exg6vvm0 {
   .txnew .card {
     flex: 0 0 100%;
   }
+}
+
+
+div.css-zx8yrj{
+    font-family: Bookman Old Style, Bookman Old Style !important;
+    color: rgb(12, 12, 12);
+
+}
+td.css-nhd13s{
+    font-weight:600;
+    background-color: #f2f2f2;
+}
+th.css-asy5qd{
+    font-weight:800;
+    color: rgb(12, 12, 12);
+
 }

@@ -63,15 +63,60 @@ def main():
             'CurrentARTStatus_Pharmacy == "Active" & Outcomes == ""  ')
         return active
 
+    def suppressed_viral_load(vl_documented):
+        vl_documented['CurrentViralLoad'] = vl_documented['CurrentViralLoad'].astype(float)
+        suppressedVl = vl_documented.query(
+            'CurrentViralLoad < 1000')
+        return suppressedVl
+
+    def documented_viralload(dateConverter, df, report_date, viralLoadEligible):
+        startDate = report_date
+        endDate = startDate + timedelta(days=-364)  # type: ignore
+        daysOnArt = viralLoadEligible(df)
+        daysOnArt['DateofCurrentViralLoad'] = dateConverter(daysOnArt.DateofCurrentViralLoad)
+        daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad']
+        vl_documented = daysOnArt.query(
+            ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
+        return vl_documented
+
+    def paedTxCurr(treatmentCurrent):
+        paed = treatmentCurrent.query('Current_Age <10 ')
+        countPaed = paed['Current_Age'].count()
+        return countPaed
+
+    def adolescentTxCurr(treatmentCurrent):
+        adolescent = treatmentCurrent.query('Current_Age >=10 & Current_Age <= 19 ')
+        countAdolescent = adolescent['Current_Age'].count()
+        return countAdolescent
+
+    def adultTxCurr(treatmentCurrent):
+        adult = treatmentCurrent.query('Current_Age >= 20 ')
+        countAdult = adult['Current_Age'].count()
+        return countAdult
+
+    def femaleTxCurr(treatmentCurrent):
+        tx_curr_female = treatmentCurrent.query('Sex == "F" ')
+        countFemale = tx_curr_female['Sex'].count()
+        return countFemale
+
+    def maleTxCurr(treatmentCurrent):
+        tx_curr_male = treatmentCurrent.query('Sex == "M" ')
+        countMale = tx_curr_male['Sex'].count()
+        return countMale
+
+    def txCurr(treatmentCurrent):
+        treatmentCurrent_count = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+        return treatmentCurrent_count
+
     def artStart():
         return df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
                   (df['ARTStartDate'] <= str(end_date)) &  # type: ignore
-                  (df['TI'] != 'YES')]  # type: ignore
+                  (df['TI'] != 'Yes')]  # type: ignore
 
     def trans_in():
         return df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
                   (df['ARTStartDate'] <= str(end_date)) &  # type: ignore
-                  (df['TI'] == 'YES')]  # type: ignore
+                  (df['TI'] == 'Yes')]  # type: ignore
 
     def pharm():
         pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(start_date)) &  # type: ignore
@@ -100,6 +145,8 @@ def main():
         df['PhoneNo'] = df['PhoneNo'].replace(to_replace=['null', 'NONE', 'NIL', 'NIL.'], value="")
         df['ARTStartDate'] = df['ARTStartDate'].replace(to_replace=np.nan, value="01/01/1900")
         df['DateofCurrentViralLoad'] = df['DateofCurrentViralLoad'].replace(to_replace=np.nan, value="01/01/1900")
+        df['LastDateOfSampleCollection'] = df['LastDateOfSampleCollection'].replace(to_replace=np.nan,
+                                                                                    value="01/01/1900")
         df['Current_Age'] = df['Current_Age'].replace(to_replace=np.nan, value=0)
         df['PhoneNo'] = df['PhoneNo'].astype(str)
 
@@ -110,34 +157,22 @@ def main():
     ###### To set the locale environment to Default OS location################
     locale.setlocale(locale.LC_ALL, '')
 
-    def filterBy(df):
-        filterByState = st.checkbox('Filter by State')
-        states = df['State'].unique()
-        col1, col2, col3 = st.columns(3)
-        return col1, col2, col3, filterByState, states
+    # def selectState(df, states):
+    #     select_state = st.multiselect(
+    #         'Select one or more States', states, key='states'
+    #     )
+    #     state = df.query('State == @select_state')
+    #     lgas = state['LGA'].unique()
+    #     return lgas, state
 
-    def selectState(df, states):
-        select_state = st.multiselect(
-            'Select one or more States', states, key='states'
-        )
-        state = df.query('State == @select_state')
-        lgas = state['LGA'].unique()
-        return lgas, state
-
-    def selectLga(lgas, state):
-        select_lgas = st.multiselect(
-            'Select one or more LGAs', lgas, key='lgas'
-        )
-        lgas = state.query('LGA == @select_lgas')
-        lga = lgas
-        facilities = lgas['FacilityName'].unique()
-        return facilities, lga
-
-    def selectFacilities(facilities, state):
-        select_facilities = st.multiselect(
-            'WSelect one or more Facilities', facilities, key='facilities'
-        )
-        facilities = state.query('FacilityName == @select_facilities')
+    # def selectLga(lgas, state):
+    #     select_lgas = st.multiselect(
+    #         'Select one or more LGAs', lgas, key='lgas'
+    #     )
+    #     lgas = state.query('LGA == @select_lgas')
+    #     lga = lgas
+    #     facilities = lgas['FacilityName'].unique()
+    #     return facilities, lga
 
     activities = ['', 'Treatment Current', 'Treatment New', 'Viral-Load Cascade',
                   'Clinical Report']
@@ -173,7 +208,8 @@ def main():
             if data not in st.session_state:
                 st.session_state.data = data.name
             placeholder.empty()
-            fileName(data)
+
+            # fileName(data)
 
             @st.cache(allow_output_mutation=True)
             def load_data1():
@@ -193,54 +229,48 @@ def main():
                     placeholder.empty()
                     dt1, dt2 = st.columns(2)
                     treatmentCurrent = tx_curr(df)
-
                     treatmentCurrent_count = txCurr(treatmentCurrent)
-
                     countMale = maleTxCurr(treatmentCurrent)
-
                     countFemale = femaleTxCurr(treatmentCurrent)
-
                     countAdult = adultTxCurr(treatmentCurrent)
-
                     countAdolescent = adolescentTxCurr(treatmentCurrent)
-
                     countPaed = paedTxCurr(treatmentCurrent)
 
                     df = tx_curr(df)
-                    col1, col2, col3, filterByState, states = filterBy(df)
 
-                    if filterByState:
-                        with col1:
-                            lgas, state = selectState(df, states)
-                            treatmentCurrent_count = txCurr(state)
+                    states = df['State'].unique()
+                    col1, col2, col3 = st.columns(3)
 
-                            countMale = maleTxCurr(state)
+                    with col1:
+                        select_state = st.multiselect(
+                            'Select States', states, key='states'
+                        )
+                        state = df.query('State == @select_state')
 
-                            countFemale = femaleTxCurr(state)
-
-                            countAdult = adultTxCurr(state)
-
-                            countAdolescent = adolescentTxCurr(state)
-
-                            countPaed = paedTxCurr(state)
-
-                        with col2:
-                            facilities, lga = selectLga(lgas, state)
-
-                            treatmentCurrent_count = txCurr(lga)
-
-                            countMale = maleTxCurr(lga)
-
-                            countFemale = femaleTxCurr(lga)
-
-                            countAdult = adultTxCurr(lga)
-
-                            countAdolescent = adolescentTxCurr(lga)
-
-                            countPaed = paedTxCurr(lga)
-                        with col3:
-                            selectFacilities(facilities, state)
-
+                        lgas = state['LGA'].unique()
+                    # st.write(state)
+                    with col2:
+                        select_lgas = st.multiselect(
+                            'Select LGAs', lgas, key='lgas'
+                        )
+                        lgas = state.query('LGA == @select_lgas')
+                        lga = lgas
+                        facilities = lgas['FacilityName'].unique()
+                    # st.write(lga)
+                    with col3:
+                        select_facilities = st.multiselect(
+                            'Select Facilities', facilities, key='facilities'
+                        )
+                        facilities = state.query('FacilityName == @select_facilities')
+                        treatmentCurrent_count_facilities = txCurr(facilities)
+                    # st.write(facilities)
+                    all = df.query('State == @select_state | LGA == @select_lgas | FacilityName == @select_facilities')
+                    if select_state:
+                        s = state['State'].count()
+                        st.write(s)
+                    elif select_state:
+                        s = state['State'].value_counts()
+                        st.write(s)
 
                     with all_card:
                         st.markdown(f"""
@@ -275,7 +305,7 @@ def main():
                                         </div>
                                         <div class="card">
                                             <div class="title">
-                                            Paed<span>{"{0:n}".format(countPaed)}</span>
+                                            Paediatrics<span>{"{0:n}".format(countPaed)}</span>
                                             </div>
                                             <div class="content">
                                         </div>
@@ -304,21 +334,35 @@ def main():
                     vLEligible = viralLoadEligible(df)
                     vLEligibleCount = vLEligible['DaysOnart'].count()
 
-                    ####################### DOCUMENTED VL ####################
-                    startDate = report_date
-                    endDate = startDate + timedelta(days=-364)  # type: ignore
-                    daysOnArt = viralLoadEligible(df)
-                    daysOnArt['DateofCurrentViralLoad'] = dateConverter(daysOnArt.DateofCurrentViralLoad)
+                    ##### VL eligible clients sample collected but awaiting results##############
 
-                    daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad']
-                    vl_documented = daysOnArt.query(
-                        ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
+                    startDate = report_date + timedelta(days=-90)
+                    endDate = report_date
+
+                    vLEligible['LastDateOfSampleCollection'] = dateConverter(vLEligible['LastDateOfSampleCollection'])
+                    vLEligible['LastDateOfSampleCollection'] = vLEligible['LastDateOfSampleCollection'].dt.date
+
+                    vlAwaitingResult = vLEligible.query(
+                        'LastDateOfSampleCollection <= @endDate & LastDateOfSampleCollection >= @startDate ')
+                    vlAwaitingResult['DateofCurrentViralLoad'] = dateConverter(
+                        vlAwaitingResult['DateofCurrentViralLoad'])
+                    vlAwaitingResult['DateofCurrentViralLoad'] = vlAwaitingResult['DateofCurrentViralLoad'].dt.date
+                    pickDate = report_date + timedelta(days=-365)
+                    vlAwaiting_Result = vlAwaitingResult.query('DateofCurrentViralLoad <= @pickDate')
+                    vlAwaiting_Result_count = vlAwaiting_Result['DateofCurrentViralLoad'].count()
+
+                    ####################### DOCUMENTED VL ####################
+                    vl_documented = documented_viralload(dateConverter, df, report_date, viralLoadEligible)
                     documentedViralload = vl_documented['PepID'].count()
 
+                    ####################### VL sample taken and sent to PCR Lab ####################
+                    vlSentToLab = documentedViralload + vlAwaiting_Result_count
+
+                    # #######################VL Eligible clients with Sample not yet taken####################
+                    vlSamplesNotYet = vLEligibleCount - vlSentToLab
+
                     # #######################SUPPRESSED VL ####################
-                    vl_documented['CurrentViralLoad'] = vl_documented['CurrentViralLoad'].astype(float)
-                    suppressedVl = vl_documented.query(
-                        'CurrentViralLoad < 1000')
+                    suppressedVl = suppressed_viral_load(vl_documented)
                     suppressedVl = suppressedVl.CurrentViralLoad.count()
 
                     # #######################SUPPRESSION RATE ####################
@@ -327,18 +371,68 @@ def main():
                     # #######################VL COVERAGE ####################
                     vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
 
-                    df = tx_curr(df)
-                    col1, col2, col3, filterByState, states = filterBy(df)
+                    vlCascade = {
+                        'INDICATORS': ['TX Current', 'VL Eligible', 'VL sample taken and sent to PCR Lab',
+                                       'VL results received and entered into patients folders/EMR', 'VL Coverage (%)',
+                                       'VL eligible sample collected but awaiting results',
+                                       'VL eligible samples not yet taken.',
+                                       'VL Suppressed (Less than 1000 copies /ml)',
+                                       'VL Suppression (%)'],
+                        'VALUES': [treatmentCurrent, vLEligibleCount, vlSentToLab, documentedViralload,
+                                   vlCoverage, vlAwaiting_Result_count, vlSamplesNotYet, suppressedVl, suppressionRate]
+                    }
 
-                    if filterByState:
-                        with col1:
-                            lgas, state = selectState(df, states)
+                    vlCascade = pd.DataFrame(vlCascade)
+                    vlCascade['VALUES'] = ["{0:n}".format(x) for x in vlCascade['VALUES']]
+                    st.table(vlCascade)
 
-                        with col2:
-                            facilities, lga = selectLga(lgas, state)
+                    #######################VL COVERAGE ####################
+                    # df = tx_curr(df)
+                    # col1, col2, col3, filterByState, states = filterBy(df)
+                    #
+                    # if filterByState:
+                    #     with col1:
+                    #         lgas, state = selectState(df, states)
+                    #         treatmentCurrent = tx_curr(state)
+                    #         treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+                    #
+                    #         vLEligible = viralLoadEligible(state)
+                    #         vLEligibleCount = vLEligible['DaysOnart'].count()
+                    #
+                    #         vl_documented = documented_viralload(dateConverter, state, report_date, viralLoadEligible)
+                    #         documentedViralload = vl_documented['PepID'].count()
+                    #
+                    #         suppressedVl = suppressed_viral_load(vl_documented)
+                    #         suppressedVl = suppressedVl.CurrentViralLoad.count()
+                    #
+                    #         suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
+                    #
+                    #         vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
 
-                        with col3:
-                            selectFacilities(facilities, state)
+                    # with col2:
+                    #     facilities, lga = selectLga(lgas, state)
+
+                    # treatmentCurrent = tx_curr(lga)
+                    # treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+                    #
+                    # vLEligible = viralLoadEligible(state)
+                    # vLEligibleCount = vLEligible['DaysOnart'].count()
+                    #
+                    # vl_documented = documented_viralload(dateConverter, lga, report_date, viralLoadEligible)
+                    # documentedViralload = vl_documented['PepID'].count()
+                    #
+                    # suppressedVl = suppressed_viral_load(vl_documented)
+                    # suppressedVl = suppressedVl.CurrentViralLoad.count()
+                    #
+                    # suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
+                    #
+                    # vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
+
+                    # with col3:
+                    #     select_facilities = st.multiselect(
+                    #         'WSelect one or more Facilities', facilities, key='facilities'
+                    #     )
+                    #     facilities = state.query('FacilityName == @select_facilities')
 
                     with all_card:
                         st.markdown(f"""
@@ -375,7 +469,7 @@ def main():
                                             <div class="title">
                                             VL Suppression <span>{suppressionRate}%</span>
                                             </div>
-                                            <div class="content">
+                                            
                                         </div>
                                         </div>
                                         """, unsafe_allow_html=True)
@@ -385,7 +479,7 @@ def main():
                     pieChart = pd.DataFrame(pieChart)
 
                     p = (
-                        Pie(init_opts=opts.InitOpts(width="1200px", height="800px"))
+                        Pie(init_opts=opts.InitOpts(width="900px", height="500px"))
                             .add(
                             "",
                             [list(z) for z in zip(pieChart['Name'], pieChart['values'])],
@@ -398,7 +492,7 @@ def main():
                                              )
                             .render_embed()
                     )
-                    components.html(p, width=1200, height=800)
+                    components.html(p, width=900, height=800)
                     # l = (
                     #     Liquid()
                     #     .add('lq', [vlCoverage/100], center=["25%", "50%"])
@@ -498,17 +592,20 @@ def main():
                                         """, unsafe_allow_html=True)
 
                     df = tx_curr(df)
-                    col1, col2, col3, filterByState, states = filterBy(df)
-
-                    if filterByState:
-                        with col1:
-                            lgas, state = selectState(df, states)
-
-                        with col2:
-                            facilities, lga = selectLga(lgas, state)
-
-                        with col3:
-                            selectFacilities(facilities, state)
+                    # col1, col2, col3, filterByState, states = filterBy(df)
+                    #
+                    # if filterByState:
+                    #     with col1:
+                    #         lgas, state = selectState(df, states)
+                    #
+                    #     with col2:
+                    #         facilities, lga = selectLga(lgas, state)
+                    #
+                    #     with col3:
+                    #         select_facilities = st.multiselect(
+                    #             'WSelect one or more Facilities', facilities, key='facilities'
+                    #         )
+                    #         facilities = state.query('FacilityName == @select_facilities')
     # REPORT MODULES
 
     if selected == 'Reports':
@@ -1004,18 +1101,7 @@ def main():
         ndr = st.file_uploader(
             'STEP 2: UPLOAD NDR LINELIST 🙏🙏🙏🙏', type=['csv'])
 
-    # Replace the placeholder with some text:
-    # placeholder.text("Hello")
 
-    # # Replace the text with a chart:
-    # placeholder.line_chart({"data": [1, 5, 2, 6]})
-
-    # # Replace the chart with several elements:
-    # with placeholder.container():
-    #     st.write("This is one element")
-    #     st.write("This is another")
-
-    # # Clear all those elements:
 
     if selected == 'Feedback':
         st.markdown('<p class="font">GOT A FEW MINUTES TO HELP ?</p>',
@@ -1023,41 +1109,6 @@ def main():
         st.subheader('Help us improve!!!.')
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
-
-
-def paedTxCurr(treatmentCurrent):
-    paed = treatmentCurrent.query('Current_Age <10 ')
-    countPaed = paed['Current_Age'].count()
-    return countPaed
-
-
-def adolescentTxCurr(treatmentCurrent):
-    adolescent = treatmentCurrent.query('Current_Age >=10 & Current_Age <= 19 ')
-    countAdolescent = adolescent['Current_Age'].count()
-    return countAdolescent
-
-
-def adultTxCurr(treatmentCurrent):
-    adult = treatmentCurrent.query('Current_Age >= 20 ')
-    countAdult = adult['Current_Age'].count()
-    return countAdult
-
-
-def femaleTxCurr(treatmentCurrent):
-    tx_curr_female = treatmentCurrent.query('Sex == "F" ')
-    countFemale = tx_curr_female['Sex'].count()
-    return countFemale
-
-
-def maleTxCurr(treatmentCurrent):
-    tx_curr_male = treatmentCurrent.query('Sex == "M" ')
-    countMale = tx_curr_male['Sex'].count()
-    return countMale
-
-
-def txCurr(treatmentCurrent):
-    treatmentCurrent_count = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
-    return treatmentCurrent_count
 
 
 hide_streamlit_style = """
@@ -1068,5 +1119,15 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+# CSS to inject contained in a string
+hide_table_row_index = """
+            <style>
+            tbody th {display:none}
+            .blank {display:none}
+            </style>
+            """
+
+# Inject CSS with Markdown
+st.markdown(hide_table_row_index, unsafe_allow_html=True)
 if __name__ == '__main__':
     main()

@@ -7,4 +7,4 @@ python_dateutil==2.8.2
 streamlit_option_menu==0.3.2
 streamlit~=1.8.1
 python-dateutil~=2.8.2
-scipy~=1.8.0
+scipy~=1.7.3

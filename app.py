@@ -1,6 +1,8 @@
 from func import *
 from tx_new_display import *
 from tx_curr_card import *
+from tx_new.treatmentNew import *
+from cleaningData.cleaningFunc import *
 import numpy as np
 import pandas as pd
 from datetime import date, datetime, timedelta
@@ -10,7 +12,6 @@ from pyecharts import options as opts
 from pyecharts.charts import Bar, Pie, Liquid, Grid
 from pyecharts.globals import SymbolType
 import streamlit.components.v1 as components
-from scipy.special import logsumexp
 
 st.set_page_config(page_title="Report Dashbooard 💻", page_icon="📑", layout="wide",
                    initial_sidebar_state="auto", )
@@ -105,26 +106,26 @@ def main():
         treatmentCurrent_count = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
         return treatmentCurrent_count
 
-    def artStart():
+    def artStart(df):
         return df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
                   (df['ARTStartDate'] <= str(end_date)) &  # type: ignore
                   (df['TI'] != 'Yes')]  # type: ignore
 
-    def trans_in():
-        return df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
-                  (df['ARTStartDate'] <= str(end_date)) &  # type: ignore
-                  (df['TI'] == 'Yes')]  # type: ignore
+    def trans_in(dataset):
+        return dataset[(dataset['ARTStartDate'] >= str(start_date)) &  # type: ignore
+                       (dataset['ARTStartDate'] <= str(end_date)) &  # type: ignore
+                       (dataset['TI'] == 'Yes')]  # type: ignore
 
     def pharm():
         pharm_start = df[(df['Pharmacy_LastPickupdate'] >= str(start_date)) &  # type: ignore
                          (df['Pharmacy_LastPickupdate'] <= str(end_date))]  # type: ignore
         return pharm_start
 
-    def outComes():
-        outcomes_date = df[(df['Outcomes_Date'] >= str(start_date)) &  # type: ignore
-                           (df['Outcomes_Date'] <= str(end_date))]  # type: ignore
-        outcomes_date = outcomes_date['Outcomes_Date'].count()
-        return outcomes_date
+    # def outComes():
+    #     outcomes_date = df[(df['Outcomes_Date'] >= str(start_date)) &  # type: ignore
+    #                        (df['Outcomes_Date'] <= str(end_date))]  # type: ignore
+    #     outcomes_date = outcomes_date['Outcomes_Date'].count()
+    #     return outcomes_date
 
     def dateConverter(dateColumn):
         return pd.to_datetime(dateColumn, format="%d/%m/%Y", errors='ignore')
@@ -136,18 +137,9 @@ def main():
     def SecondDate():
         SecondDate.end_date = st.date_input("To", )
 
-    def cleanDataSet():
-        df.replace(to_replace='\\\\N', value='')
-        df['Outcomes'] = df['Outcomes'].replace(to_replace=np.nan, value="")
-        df['PhoneNo'] = df['PhoneNo'].replace(to_replace=['null', 'NONE', 'NIL', 'NIL.'], value="")
-        df['ARTStartDate'] = df['ARTStartDate'].replace(to_replace=np.nan, value="01/01/1900")
-        df['DateofCurrentViralLoad'] = df['DateofCurrentViralLoad'].replace(to_replace=np.nan, value="01/01/1900")
-        df['LastDateOfSampleCollection'] = df['LastDateOfSampleCollection'].replace(to_replace=np.nan,
-                                                                                    value="01/01/1900")
-        df['Current_Age'] = df['Current_Age'].replace(to_replace=np.nan, value=0)
-        df['Current_TB_Status'] = df['Current_TB_Status'].replace(to_replace=np.nan, value="")
-        df['IPT_Screening_Date'] = df['IPT_Screening_Date'].replace(to_replace=np.nan, value="")
-        df['PhoneNo'] = df['PhoneNo'].astype(str)
+    def fileName(name):
+        fileName = data.name
+        st.header(fileName)
 
     activities = ['', 'Treatment New', 'Treatment Current', 'Viral-Load Cascade',
                   'Clinical Report']
@@ -173,16 +165,18 @@ def main():
         with monitoring:
             all_card = st.empty()
             ####################### TREATMENT NEW CONTAINER###################
-            txnewContainer = st.container()
+            txnewContainer = st.empty()
             placeholder = st.empty()
 
         data = placeholder.file_uploader(
-            'Upload your Treatment Line list here. Pls ART Line list Only 🙏🙏🙏🙏', type=['csv'])
+            'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
         st.session_state.data = data
         if data is not None:
             if data not in st.session_state:
                 st.session_state.data = data.name
             placeholder.empty()
+
+            # fileName(data)
 
             @st.cache(allow_output_mutation=True)
             def load_data1():
@@ -190,7 +184,7 @@ def main():
                 return df
 
             df = load_data1()
-            cleanDataSet()
+            cleanDataSet(df)
 
             report_date = st.date_input("Select your reporting date", )
 
@@ -221,7 +215,10 @@ def main():
                         facilities, lga, select_lgas = selectLga(lgas, state)
 
                     with col3:
-                        selectFacility(facilities, state, txCurr)
+                        select_facilities = st.multiselect(
+                            'Select Facilities', facilities, key='facilities'
+                        )
+                        facilities = state.query('FacilityName == @select_facilities')
 
                     with all_card:
                         displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
@@ -250,6 +247,20 @@ def main():
                         countAdult = adultTxCurr(treatmentCurrent)
                         countAdolescent = adolescentTxCurr(treatmentCurrent)
                         countPaed = paedTxCurr(treatmentCurrent)
+                        with all_card:
+                            with all_card:
+                                displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                            treatmentCurrent_count)
+                    if select_facilities:
+                        all_card.empty()
+                        treatmentCurrent = tx_curr(facilities)
+                        treatmentCurrent_count = txCurr(treatmentCurrent)
+                        countMale = maleTxCurr(treatmentCurrent)
+                        countFemale = femaleTxCurr(treatmentCurrent)
+                        countAdult = adultTxCurr(treatmentCurrent)
+                        countAdolescent = adolescentTxCurr(treatmentCurrent)
+                        countPaed = paedTxCurr(treatmentCurrent)
+
                         with all_card:
                             with all_card:
                                 displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
@@ -479,37 +490,22 @@ def main():
                         SecondDate()
                         end_date = SecondDate.end_date
 
-                    art_start = artStart()
+                    art_start = artStart(df)
                     art_start_count = art_start['PepID'].count()
+                    cd4CountCoverage, cd4_count_result = cd4_counts(art_start, art_start_count)
+                    pbsCoverage, pbs_count = pbsCheck(art_start, art_start_count)
+                    transferIn_count = tranfer_IN(df, trans_in)
+                    ipt_screening, ipt_screening_query = iptScreening(art_start)
+                    tbDocumented_result_count = documentedTb(ipt_screening_query)
+                    Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                    tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                    tbMonitoring = monitoringDataframe(tbStatus)
 
-                    cd4_count = art_start.query('FirstCD4 != "" ')
-                    cd4_count = cd4_count['FirstCD4'].count()
-                    cd4CountCoverage = ((logsumexp(cd4_count) / logsumexp(art_start_count)) * 100).round(1)
-
-                    pbs = art_start.query('PBS == "Yes" ')
-                    pbs = pbs['PBS'].count()
-                    pbsCoverage = ((logsumexp(pbs) / logsumexp(art_start_count)) * 100).round(1)
-
-                    transferIn = trans_in()
-                    transferIn = transferIn['TI'].count()
-
-                    ipt_screening_query = art_start.query('IPT_Screening_Date != "" ')
-                    ipt_screening = ipt_screening_query['IPT_Screening_Date'].count()
-                    st.write(ipt_screening)
-
-                    tbDocumented_result = tbDocumentedResults(ipt_screening_query)
-                    tbDocumented_result = tbDocumented_result['State'].count()
-                    st.write(tbDocumented_result)
-
-                    Current_TB_Status = ipt_screening_query.query(
-                        'Current_TB_Status == "Disease suspected" | Current_TB_Status '
-                        '== "On treatment for disease" | Current_TB_Status == '
-                        ' "Disease diagnosed"')
-                    Current_TB_Status_count = Current_TB_Status['Current_TB_Status'].count()
-                    st.write(Current_TB_Status_count)
-
-                    tbStatusResults = tbDocumentedResults(Current_TB_Status)
-                    tbStatusResults
+                    st.markdown('<p class="tb">TB SCREENING </p>',
+                                unsafe_allow_html=True)
+                    tb_container = st.empty()
+                    with tb_container:
+                        st.table(tbMonitoring)
 
                     states = df['State'].unique()
                     col1, col2, col3 = st.columns(3)
@@ -521,14 +517,105 @@ def main():
                         facilities, lga, select_lgas = selectLga(lgas, state)
 
                     with col3:
-                        selectFacility(facilities, state, txCurr)
+                        select_facilities = st.multiselect(
+                            'Select Facilities', facilities, key='facilities'
+                        )
+                        facilities = state.query('FacilityName == @select_facilities')
 
                     with txnewContainer:
-                        txNewDisplay(art_start_count, cd4CountCoverage, cd4_count, pbs, pbsCoverage, transferIn)
-                    st.success('IPT_Screening_Date')
-                    st.info('Current_TB_Status')
-                    st.warning('GeneXpert_Result')
+                        txNewDisplay(art_start_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                     transferIn_count)
 
+                    if select_state:
+                        txnewContainer.empty()
+                        tb_container.empty()
+                        tx_new = artStart(state)
+                        tx_new_state = artStart(tx_new)
+                        tx_new_count = tx_new_state['State'].count()
+                        cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
+                        pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
+                        transferIn_count = tranfer_IN(tx_new, trans_in)
+                        ipt_screening, ipt_screening_query = iptScreening(tx_new)
+                        tbDocumented_result_count = documentedTb(ipt_screening_query)
+                        Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                        tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                        tbMonitoring = monitoringDataframe(tbStatus)
+
+                        with tb_container:
+                            st.table(tbMonitoring)
+
+                        with txnewContainer:
+                            txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                         transferIn_count)
+
+                    if select_lgas:
+                        txnewContainer.empty()
+                        tb_container.empty()
+                        tx_new = artStart(lga)
+                        tx_new_state = artStart(tx_new)
+                        tx_new_count = tx_new_state['State'].count()
+                        cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
+                        pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
+                        transferIn_count = tranfer_IN(tx_new, trans_in)
+                        ipt_screening, ipt_screening_query = iptScreening(tx_new)
+                        tbDocumented_result_count = documentedTb(ipt_screening_query)
+                        Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                        tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                        tbMonitoring = monitoringDataframe(tbStatus)
+
+                        with tb_container:
+                            st.table(tbMonitoring)
+
+                        with txnewContainer:
+                            txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                         transferIn_count)
+                    if select_facilities:
+                        txnewContainer.empty()
+                        tb_container.empty()
+                        tx_new = artStart(facilities)
+                        tx_new_state = artStart(tx_new)
+                        tx_new_count = tx_new_state['State'].count()
+                        cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
+                        pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
+                        transferIn_count = tranfer_IN(tx_new, trans_in)
+                        ipt_screening, ipt_screening_query = iptScreening(tx_new)
+                        tbDocumented_result_count = documentedTb(ipt_screening_query)
+                        Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                        tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                        tbMonitoring = monitoringDataframe(tbStatus)
+
+                        with tb_container:
+                            st.table(tbMonitoring)
+
+                        with txnewContainer:
+                            txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                         transferIn_count)
+
+                        pieChart = {'Name': ["TX_NEW", "TRANSFER IN", "PBS", "CD4 COUNT", "TB SCREENING",
+                                             "TB STATUS OUTCOMES", "DOCUMENTED TB RESULTS"],
+                                    'values': [tx_new_count, transferIn_count, pbs_count, cd4_count_result,
+                                               ipt_screening, Current_TB_Status_count, tbDocumented_result_count]}
+                        pieChart = pd.DataFrame(pieChart)
+
+                        p = (
+                            Pie(init_opts=opts.InitOpts(width="1200px", height="700px"))
+                                .add(
+                                "",
+                                [list(z) for z in zip(pieChart['Name'], pieChart['values'])],
+                                radius=["40%", "75%"],
+                            )
+                                .set_colors(["green", "red", "orange", "purple"])
+                                .set_global_opts(
+                                title_opts=opts.TitleOpts(title="TREATMENT NEW"),
+                                legend_opts=opts.LegendOpts(orient="vertical", pos_top="10%", pos_right="%"),
+                            )
+
+                                .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=12)
+
+                                                 )
+                                .render_embed()
+                        )
+                        components.html(p, width=1200, height=800)
     # REPORT MODULES
 
     if selected == 'Reports':
@@ -540,8 +627,6 @@ def main():
 
         placeholder = st.empty()
         if st.session_state.data is not None:
-            st.header(st.session_state.data)
-
             report = placeholder.file_uploader(
                 'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
             placeholder.empty()
@@ -550,6 +635,8 @@ def main():
                 'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
 
         if report is not None:
+            placeholder.empty()
+
             @st.cache(allow_output_mutation=True)
             def load_data2():
                 df = pd.read_csv(report, encoding='unicode_escape')
@@ -576,25 +663,26 @@ def main():
                 dt1, dt2 = st.columns(2)
                 with dt1:
                     # start date
-                    start_date = firstDate()
+                    firstDate()
                     start_date = firstDate.start_date
                 with dt2:
                     # end date
-                    end_date = SecondDate()
+                    SecondDate()
                     end_date = SecondDate.end_date
 
                 treatmentCurrent = tx_curr(df)
                 treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+
                 art_start = artStart()
-
                 art_start_count = art_start['PepID'].count()
-                pharm_start = pharm()
 
+                pharm_start = pharm()
                 pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                 )
 
-                outcomes_date = outComes()
-                placeholder.empty()
+                df['Outcomes_Date'] = dateConverter(df.Outcomes_Date)
+                outcomes_date = df.query('Outcomes_Date >= @start_date &  Outcomes_Date <= @end_date')
+                outcomes_date = outcomes_date['Outcomes_Date'].count()
 
                 df['LastPickupDateCal'] = pd.to_datetime(
                     df['LastPickupDateCal'])
@@ -1030,26 +1118,6 @@ def main():
         st.subheader('Help us improve!!!.')
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
-
-
-def tbDocumentedResults(ipt_screening_query):
-    return ipt_screening_query.query('Sputum_AFB_Result == "Positive" | '
-                                     'Sputum_AFB_Result == "Negative" | '
-                                     'GeneXpert_Result == "Smear negative pulmonary '
-                                     'tuberculosis patient" | GeneXpert_Result == "MTB '
-                                     'not Detected" | GeneXpert_Result == "MTB '
-                                     'Detected" | Chest_Xray_Result == "Suggestive" | '
-                                     'Chest_Xray_Result == "Not Suggestive" | '
-                                     'Culture_Result == "Posive" | Culture_Result == '
-                                     '"Negative" ')
-
-
-def selectFacility(facilities, state, txCurr):
-    select_facilities = st.multiselect(
-        'Select Facilities', facilities, key='facilities'
-    )
-    facilities = state.query('FacilityName == @select_facilities')
-    treatmentCurrent_count_facilities = txCurr(facilities)
 
 
 def selectLga(lgas, state):

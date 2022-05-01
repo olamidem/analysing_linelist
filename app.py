@@ -1,16 +1,15 @@
 from func import *
-from tx_new_display import *
+from functions.download.downloadFun import *
+from functions.tx_new.tx_new_display import *
 from tx_curr_card import *
-from tx_new.treatmentNew import *
-from cleaningData.cleaningFunc import *
-import numpy as np
+from functions.tx_new.treatmentNew import *
+from functions.cleaningData.cleaningFunc import *
 import pandas as pd
-from datetime import date, datetime, timedelta
+from datetime import timedelta
 from streamlit_option_menu import option_menu
-from dateutil.relativedelta import relativedelta, MO
+from dateutil.relativedelta import relativedelta
 from pyecharts import options as opts
-from pyecharts.charts import Bar, Pie, Liquid, Grid
-from pyecharts.globals import SymbolType
+from pyecharts.charts import Pie
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Report Dashbooard 💻", page_icon="📑", layout="wide",
@@ -46,7 +45,7 @@ def main():
             female['Current_Age'].isnull()
             return "1 - 4"
 
-    ############OUTPUT FUNCTION###############################
+    # ###########OUTPUT FUNCTION###############################
     def output():
         colm, colf, colp = st.columns(3)
         with colm:
@@ -106,10 +105,10 @@ def main():
         treatmentCurrent_count = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
         return treatmentCurrent_count
 
-    def artStart(df):
-        return df[(df['ARTStartDate'] >= str(start_date)) &  # type: ignore
-                  (df['ARTStartDate'] <= str(end_date)) &  # type: ignore
-                  (df['TI'] != 'Yes')]  # type: ignore
+    def artStart(dataSet):
+        return dataSet[(dataSet['ARTStartDate'] >= str(start_date)) &  # type: ignore
+                       (dataSet['ARTStartDate'] <= str(end_date)) &  # type: ignore
+                       (dataSet['TI'] != 'Yes')]  # type: ignore
 
     def trans_in(dataset):
         return dataset[(dataset['ARTStartDate'] >= str(start_date)) &  # type: ignore
@@ -137,9 +136,12 @@ def main():
     def SecondDate():
         SecondDate.end_date = st.date_input("To", )
 
-    def fileName(name):
-        fileName = data.name
-        st.header(fileName)
+    # def fileName(name):
+    #     fileName = data.name
+    #     st.header(fileName)
+    def convert_df(filename):
+        # IMPORTANT: Cache the conversion to prevent computation on every rerun
+        return filename.to_csv().encode('utf-8')
 
     activities = ['', 'Treatment New', 'Treatment Current', 'Viral-Load Cascade',
                   'Clinical Report']
@@ -159,7 +161,7 @@ def main():
 
         st.markdown('<p class="font">Monitoring Dashboard💻</p>',
                     unsafe_allow_html=True)
-        ############MONITORING MODULES#######################################
+        # ############MONITORING MODULES#######################################
 
         monitoring = st.container()
         with monitoring:
@@ -184,48 +186,20 @@ def main():
                 return df
 
             df = load_data1()
-            cleanDataSet(df)
+            columns = ['ARTStartDate']
+            columns2 = [df.columns[12]]
+            if [columns] == [columns2]:
+                cleanDataSet(df)
+                report_date = st.date_input("Select your reporting date", )
 
-            report_date = st.date_input("Select your reporting date", )
+                choice = st.selectbox(
+                    'What would you like to Analyse?', activities)
 
-            choice = st.selectbox(
-                'What would you like to Analyse?', activities)
-
-            if choice == 'Treatment Current':
-                if choice is not None:
-                    placeholder.empty()
-                    dt1, dt2 = st.columns(2)
-                    treatmentCurrent = tx_curr(df)
-                    treatmentCurrent_count = txCurr(treatmentCurrent)
-                    countMale = maleTxCurr(treatmentCurrent)
-                    countFemale = femaleTxCurr(treatmentCurrent)
-                    countAdult = adultTxCurr(treatmentCurrent)
-                    countAdolescent = adolescentTxCurr(treatmentCurrent)
-                    countPaed = paedTxCurr(treatmentCurrent)
-
-                    df = tx_curr(df)
-
-                    states = df['State'].unique()
-                    col1, col2, col3 = st.columns(3)
-
-                    with col1:
-                        lgas, select_state, state = selectState(df, states)
-
-                    with col2:
-                        facilities, lga, select_lgas = selectLga(lgas, state)
-
-                    with col3:
-                        select_facilities = st.multiselect(
-                            'Select Facilities', facilities, key='facilities'
-                        )
-                        facilities = state.query('FacilityName == @select_facilities')
-
-                    with all_card:
-                        displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
-                                    treatmentCurrent_count)
-                    if select_state:
-                        all_card.empty()
-                        treatmentCurrent = tx_curr(state)
+                if choice == 'Treatment Current':
+                    if choice is not None:
+                        placeholder.empty()
+                        dt1, dt2 = st.columns(2)
+                        treatmentCurrent = tx_curr(df)
                         treatmentCurrent_count = txCurr(treatmentCurrent)
                         countMale = maleTxCurr(treatmentCurrent)
                         countFemale = femaleTxCurr(treatmentCurrent)
@@ -233,389 +207,439 @@ def main():
                         countAdolescent = adolescentTxCurr(treatmentCurrent)
                         countPaed = paedTxCurr(treatmentCurrent)
 
+                        df = tx_curr(df)
+
+                        states = df['State'].unique()
+                        col1, col2, col3 = st.columns(3)
+
+                        with col1:
+                            lgas, select_state, state = selectState(df, states)
+
+                        with col2:
+                            facilities, lga, select_lgas = selectLga(lgas, state)
+
+                        with col3:
+                            select_facilities = st.multiselect(
+                                'Select Facilities', facilities, key='facilities'
+                            )
+                            facilities = state.query('FacilityName == @select_facilities')
+
                         with all_card:
+                            displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                        treatmentCurrent_count)
+                        if select_state:
+                            all_card.empty()
+                            treatmentCurrent = tx_curr(state)
+                            treatmentCurrent_count = txCurr(treatmentCurrent)
+                            countMale = maleTxCurr(treatmentCurrent)
+                            countFemale = femaleTxCurr(treatmentCurrent)
+                            countAdult = adultTxCurr(treatmentCurrent)
+                            countAdolescent = adolescentTxCurr(treatmentCurrent)
+                            countPaed = paedTxCurr(treatmentCurrent)
+
+                            with all_card:
+                                with all_card:
+                                    displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                                treatmentCurrent_count)
+
+                        if select_lgas:
+                            all_card.empty()
+                            treatmentCurrent = tx_curr(lga)
+                            treatmentCurrent_count = txCurr(treatmentCurrent)
+                            countMale = maleTxCurr(treatmentCurrent)
+                            countFemale = femaleTxCurr(treatmentCurrent)
+                            countAdult = adultTxCurr(treatmentCurrent)
+                            countAdolescent = adolescentTxCurr(treatmentCurrent)
+                            countPaed = paedTxCurr(treatmentCurrent)
+
+                            with all_card:
+                                displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                            treatmentCurrent_count)
+                        if select_facilities:
+                            all_card.empty()
+                            treatmentCurrent = tx_curr(facilities)
+                            treatmentCurrent_count = txCurr(treatmentCurrent)
+                            countMale = maleTxCurr(treatmentCurrent)
+                            countFemale = femaleTxCurr(treatmentCurrent)
+                            countAdult = adultTxCurr(treatmentCurrent)
+                            countAdolescent = adolescentTxCurr(treatmentCurrent)
+                            countPaed = paedTxCurr(treatmentCurrent)
+
                             with all_card:
                                 displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
                                             treatmentCurrent_count)
 
-                    if select_lgas:
-                        all_card.empty()
-                        treatmentCurrent = tx_curr(lga)
-                        treatmentCurrent_count = txCurr(treatmentCurrent)
-                        countMale = maleTxCurr(treatmentCurrent)
-                        countFemale = femaleTxCurr(treatmentCurrent)
-                        countAdult = adultTxCurr(treatmentCurrent)
-                        countAdolescent = adolescentTxCurr(treatmentCurrent)
-                        countPaed = paedTxCurr(treatmentCurrent)
-                        with all_card:
-                            with all_card:
-                                displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
-                                            treatmentCurrent_count)
-                    if select_facilities:
-                        all_card.empty()
-                        treatmentCurrent = tx_curr(facilities)
-                        treatmentCurrent_count = txCurr(treatmentCurrent)
-                        countMale = maleTxCurr(treatmentCurrent)
-                        countFemale = femaleTxCurr(treatmentCurrent)
-                        countAdult = adultTxCurr(treatmentCurrent)
-                        countAdolescent = adolescentTxCurr(treatmentCurrent)
-                        countPaed = paedTxCurr(treatmentCurrent)
+                if choice == 'Viral-Load Cascade':
+                    if choice is not None:
+                        treatmentCurrent = tx_curr(df)
+                        treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+
+                        #######################ELIGIBLE ####################
+                        df = df.query('CurrentARTStatus_Pharmacy == "Active"  & ARTStartDate != "" ')
+                        df['Ref_Date'] = report_date
+
+                        df['ARTStartDate'] = dateConverter(df['ARTStartDate'])
+
+                        df['ARTStartDate'] = df['ARTStartDate'].dt.date
+                        df['DaysOnart'] = (
+                                df['Ref_Date'] - df['ARTStartDate']).dt.days
+
+                        def viralLoadEligible(dataSet):
+                            return dataSet.query(
+                                ' DaysOnart >= 180  & CurrentARTStatus_Pharmacy == "Active" & Outcomes == "" ')
+
+                        vLEligible = viralLoadEligible(df)
+                        vLEligibleCount = vLEligible['DaysOnart'].count()
+
+                        ##### VL eligible clients sample collected but awaiting results##############
+
+                        startDate = report_date + timedelta(days=-90)
+                        endDate = report_date
+
+                        vLEligible['LastDateOfSampleCollection'] = dateConverter(
+                            vLEligible['LastDateOfSampleCollection'])
+                        vLEligible['LastDateOfSampleCollection'] = vLEligible['LastDateOfSampleCollection'].dt.date
+
+                        vlAwaitingResult = vLEligible.query(
+                            'LastDateOfSampleCollection <= @endDate & LastDateOfSampleCollection >= @startDate ')
+                        vlAwaitingResult['DateofCurrentViralLoad'] = dateConverter(
+                            vlAwaitingResult['DateofCurrentViralLoad'])
+                        vlAwaitingResult['DateofCurrentViralLoad'] = vlAwaitingResult['DateofCurrentViralLoad'].dt.date
+                        pickDate = report_date + timedelta(days=-365)
+                        vlAwaiting_Result = vlAwaitingResult.query('DateofCurrentViralLoad <= @pickDate')
+                        vlAwaiting_Result_count = vlAwaiting_Result['DateofCurrentViralLoad'].count()
+
+                        ####################### DOCUMENTED VL ####################
+                        vl_documented = documented_viralload(dateConverter, df, report_date, viralLoadEligible)
+                        documentedViralload = vl_documented['PepID'].count()
+
+                        ####################### VL sample taken and sent to PCR Lab ####################
+                        vlSentToLab = documentedViralload + vlAwaiting_Result_count
+
+                        # #######################VL Eligible clients with Sample not yet taken####################
+                        vlSamplesNotYet = vLEligibleCount - vlSentToLab
+
+                        # #######################SUPPRESSED VL ####################
+                        suppressedVl = suppressed_viral_load(vl_documented)
+                        suppressedVl = suppressedVl.CurrentViralLoad.count()
+
+                        # #######################SUPPRESSION RATE ####################
+                        suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
+
+                        # #######################VL COVERAGE ####################
+                        vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
+
+                        vlCascade = {
+                            'INDICATORS': ['TX Current', 'VL Eligible', 'VL sample taken and sent to PCR Lab',
+                                           'VL results received and entered into patients folders/EMR',
+                                           'VL Coverage (%)',
+                                           'VL eligible sample collected but awaiting results',
+                                           'VL eligible samples not yet taken.',
+                                           'VL Suppressed (Less than 1000 copies /ml)',
+                                           'VL Suppression (%)'],
+                            'VALUES': [treatmentCurrent, vLEligibleCount, vlSentToLab, documentedViralload,
+                                       vlCoverage, vlAwaiting_Result_count, vlSamplesNotYet, suppressedVl,
+                                       suppressionRate]
+                        }
+
+                        vlCascade = pd.DataFrame(vlCascade)
+                        vlCascade['VALUES'] = ["{0:n}".format(x) for x in vlCascade['VALUES']]
+                        vlCascade = vlCascade.set_index('INDICATORS').transpose()
+                        st.table(vlCascade)
+
+                        #######################VL COVERAGE ####################
+                        # df = tx_curr(df)
+                        # col1, col2, col3, filterByState, states = filterBy(df)
+                        #
+                        # if filterByState:
+                        #     with col1:
+                        #         lgas, state = selectState(df, states)
+                        #         treatmentCurrent = tx_curr(state)
+                        #         treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+                        #
+                        #         vLEligible = viralLoadEligible(state)
+                        #         vLEligibleCount = vLEligible['DaysOnart'].count()
+                        #
+                        #         vl_documented = documented_viralload(dateConverter, state, report_date, viralLoadEligible)
+                        #         documentedViralload = vl_documented['PepID'].count()
+                        #
+                        #         suppressedVl = suppressed_viral_load(vl_documented)
+                        #         suppressedVl = suppressedVl.CurrentViralLoad.count()
+                        #
+                        #         suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
+                        #
+                        #         vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
+
+                        # with col2:
+                        #     facilities, lga = selectLga(lgas, state)
+
+                        # treatmentCurrent = tx_curr(lga)
+                        # treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+                        #
+                        # vLEligible = viralLoadEligible(state)
+                        # vLEligibleCount = vLEligible['DaysOnart'].count()
+                        #
+                        # vl_documented = documented_viralload(dateConverter, lga, report_date, viralLoadEligible)
+                        # documentedViralload = vl_documented['PepID'].count()
+                        #
+                        # suppressedVl = suppressed_viral_load(vl_documented)
+                        # suppressedVl = suppressedVl.CurrentViralLoad.count()
+                        #
+                        # suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
+                        #
+                        # vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
+
+                        # with col3:
+                        #     select_facilities = st.multiselect(
+                        #         'WSelect one or more Facilities', facilities, key='facilities'
+                        #     )
+                        #     facilities = state.query('FacilityName == @select_facilities')
 
                         with all_card:
-                            with all_card:
-                                displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
-                                            treatmentCurrent_count)
-
-            if choice == 'Viral-Load Cascade':
-                if choice is not None:
-                    treatmentCurrent = tx_curr(df)
-                    treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
-
-                    #######################ELIGIBLE ####################
-                    df = df.query('CurrentARTStatus_Pharmacy == "Active"  & ARTStartDate != "" ')
-                    df['Ref_Date'] = report_date
-
-                    df['ARTStartDate'] = dateConverter(df['ARTStartDate'])
-
-                    df['ARTStartDate'] = df['ARTStartDate'].dt.date
-                    df['DaysOnart'] = (
-                            df['Ref_Date'] - df['ARTStartDate']).dt.days
-
-                    def viralLoadEligible(dataSet):
-                        return dataSet.query(
-                            ' DaysOnart >= 180  & CurrentARTStatus_Pharmacy == "Active" & Outcomes == "" ')
-
-                    vLEligible = viralLoadEligible(df)
-                    vLEligibleCount = vLEligible['DaysOnart'].count()
-
-                    ##### VL eligible clients sample collected but awaiting results##############
-
-                    startDate = report_date + timedelta(days=-90)
-                    endDate = report_date
-
-                    vLEligible['LastDateOfSampleCollection'] = dateConverter(vLEligible['LastDateOfSampleCollection'])
-                    vLEligible['LastDateOfSampleCollection'] = vLEligible['LastDateOfSampleCollection'].dt.date
-
-                    vlAwaitingResult = vLEligible.query(
-                        'LastDateOfSampleCollection <= @endDate & LastDateOfSampleCollection >= @startDate ')
-                    vlAwaitingResult['DateofCurrentViralLoad'] = dateConverter(
-                        vlAwaitingResult['DateofCurrentViralLoad'])
-                    vlAwaitingResult['DateofCurrentViralLoad'] = vlAwaitingResult['DateofCurrentViralLoad'].dt.date
-                    pickDate = report_date + timedelta(days=-365)
-                    vlAwaiting_Result = vlAwaitingResult.query('DateofCurrentViralLoad <= @pickDate')
-                    vlAwaiting_Result_count = vlAwaiting_Result['DateofCurrentViralLoad'].count()
-
-                    ####################### DOCUMENTED VL ####################
-                    vl_documented = documented_viralload(dateConverter, df, report_date, viralLoadEligible)
-                    documentedViralload = vl_documented['PepID'].count()
-
-                    ####################### VL sample taken and sent to PCR Lab ####################
-                    vlSentToLab = documentedViralload + vlAwaiting_Result_count
-
-                    # #######################VL Eligible clients with Sample not yet taken####################
-                    vlSamplesNotYet = vLEligibleCount - vlSentToLab
-
-                    # #######################SUPPRESSED VL ####################
-                    suppressedVl = suppressed_viral_load(vl_documented)
-                    suppressedVl = suppressedVl.CurrentViralLoad.count()
-
-                    # #######################SUPPRESSION RATE ####################
-                    suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
-
-                    # #######################VL COVERAGE ####################
-                    vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
-
-                    vlCascade = {
-                        'INDICATORS': ['TX Current', 'VL Eligible', 'VL sample taken and sent to PCR Lab',
-                                       'VL results received and entered into patients folders/EMR', 'VL Coverage (%)',
-                                       'VL eligible sample collected but awaiting results',
-                                       'VL eligible samples not yet taken.',
-                                       'VL Suppressed (Less than 1000 copies /ml)',
-                                       'VL Suppression (%)'],
-                        'VALUES': [treatmentCurrent, vLEligibleCount, vlSentToLab, documentedViralload,
-                                   vlCoverage, vlAwaiting_Result_count, vlSamplesNotYet, suppressedVl, suppressionRate]
-                    }
-
-                    vlCascade = pd.DataFrame(vlCascade)
-                    vlCascade['VALUES'] = ["{0:n}".format(x) for x in vlCascade['VALUES']]
-                    vlCascade = vlCascade.set_index('INDICATORS').transpose()
-                    st.table(vlCascade)
-
-                    #######################VL COVERAGE ####################
-                    # df = tx_curr(df)
-                    # col1, col2, col3, filterByState, states = filterBy(df)
-                    #
-                    # if filterByState:
-                    #     with col1:
-                    #         lgas, state = selectState(df, states)
-                    #         treatmentCurrent = tx_curr(state)
-                    #         treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
-                    #
-                    #         vLEligible = viralLoadEligible(state)
-                    #         vLEligibleCount = vLEligible['DaysOnart'].count()
-                    #
-                    #         vl_documented = documented_viralload(dateConverter, state, report_date, viralLoadEligible)
-                    #         documentedViralload = vl_documented['PepID'].count()
-                    #
-                    #         suppressedVl = suppressed_viral_load(vl_documented)
-                    #         suppressedVl = suppressedVl.CurrentViralLoad.count()
-                    #
-                    #         suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
-                    #
-                    #         vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
-
-                    # with col2:
-                    #     facilities, lga = selectLga(lgas, state)
-
-                    # treatmentCurrent = tx_curr(lga)
-                    # treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
-                    #
-                    # vLEligible = viralLoadEligible(state)
-                    # vLEligibleCount = vLEligible['DaysOnart'].count()
-                    #
-                    # vl_documented = documented_viralload(dateConverter, lga, report_date, viralLoadEligible)
-                    # documentedViralload = vl_documented['PepID'].count()
-                    #
-                    # suppressedVl = suppressed_viral_load(vl_documented)
-                    # suppressedVl = suppressedVl.CurrentViralLoad.count()
-                    #
-                    # suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
-                    #
-                    # vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
-
-                    # with col3:
-                    #     select_facilities = st.multiselect(
-                    #         'WSelect one or more Facilities', facilities, key='facilities'
-                    #     )
-                    #     facilities = state.query('FacilityName == @select_facilities')
-
-                    with all_card:
-                        st.markdown(f"""
-                                        <div class="container">
-                                        <div class="card">
-                                            <div class="title">
-                                            Tx_Curr<span>{"{0:n}".format(treatmentCurrent)}</span>
+                            st.markdown(f"""
+                                            <div class="container">
+                                            <div class="card">
+                                                <div class="title">
+                                                Tx_Curr<span>{"{0:n}".format(treatmentCurrent)}</span>
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div class="card">
-                                            <div class="title">
-                                            VL Eligible<span>{"{0:n}".format(vLEligibleCount)}</span>
+    
+                                            <div class="card">
+                                                <div class="title">
+                                                VL Eligible<span>{"{0:n}".format(vLEligibleCount)}</span>
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div class="card">
-                                            <div class="title">
-                                            Documented VL<span>{"{0:n}".format(documentedViralload)}</span>
+    
+                                            <div class="card">
+                                                <div class="title">
+                                                Documented VL<span>{"{0:n}".format(documentedViralload)}</span>
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div class="card">
-                                            <div class="title">
-                                            Suppressed VL<span>{"{0:n}".format(suppressedVl)}</span>
+    
+                                            <div class="card">
+                                                <div class="title">
+                                                Suppressed VL<span>{"{0:n}".format(suppressedVl)}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="card">
-                                            <div class="title">
-                                            VL Coverage<span>{vlCoverage}%</span>
+                                            <div class="card">
+                                                <div class="title">
+                                                VL Coverage<span>{vlCoverage}%</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="card">
-                                            <div class="title">
-                                            VL Suppression <span>{suppressionRate}%</span>
+                                            <div class="card">
+                                                <div class="title">
+                                                VL Suppression <span>{suppressionRate}%</span>
+                                                </div>
+                                                
                                             </div>
-                                            
-                                        </div>
-                                        </div>
-                                        """, unsafe_allow_html=True)
+                                            </div>
+                                            """, unsafe_allow_html=True)
 
-                    pieChart = {'Name': ["TX_CURR", "Eligible", "Documented", "Suppressed"],
-                                'values': [treatmentCurrent, vLEligibleCount, documentedViralload, suppressedVl]}
-                    pieChart = pd.DataFrame(pieChart)
-
-                    p = (
-                        Pie(init_opts=opts.InitOpts(width="900px", height="500px"))
-                            .add(
-                            "",
-                            [list(z) for z in zip(pieChart['Name'], pieChart['values'])],
-                            radius=["40%", "75%"],
-                        )
-                            .set_colors(["green", "red", "orange", "purple"])
-
-                            .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=20)
-
-                                             )
-                            .render_embed()
-                    )
-                    components.html(p, width=900, height=800)
-                    # l = (
-                    #     Liquid()
-                    #     .add('lq', [vlCoverage/100], center=["25%", "50%"])
-                    #     .set_global_opts(
-                    #         title_opts = opts.TitleOpts(title ='VL Coverage', pos_left='15%')
-                    #     )
-
-                    # )
-                    # g = (
-                    #     Liquid()
-                    #     .add('lq', [suppressionRate/100],center=["80%", "50%"] )
-                    #     .set_global_opts(
-                    #         title_opts = opts.TitleOpts(title ='Supperession Rate', pos_left='70%')
-                    #     )
-
-                    # )
-                    # grid = Grid().add(l, grid_opts=opts.GridOpts()).add(g, grid_opts=opts.GridOpts())
-                    # grid.render_embed()
-
-                    # components.html(grid.render_embed(), width=1000, height=500)
-                    # with pi1:
-                    #     components.html(l,width=1000, height=500)
-                    # with pi2:
-                    #     components.html(g,width=1000, height=500)
-
-            if choice == 'Treatment New':
-
-                if data is not None:
-                    placeholder.empty()
-
-                    df['ARTStartDate'] = dateConverter(df.ARTStartDate)
-                    dt1, dt2 = st.columns(2)
-                    with dt1:
-                        # start date
-                        firstDate()
-                        start_date = firstDate.start_date
-
-                    with dt2:
-                        # end date
-                        SecondDate()
-                        end_date = SecondDate.end_date
-
-                    art_start = artStart(df)
-                    art_start_count = art_start['PepID'].count()
-                    cd4CountCoverage, cd4_count_result = cd4_counts(art_start, art_start_count)
-                    pbsCoverage, pbs_count = pbsCheck(art_start, art_start_count)
-                    transferIn_count = tranfer_IN(df, trans_in)
-                    ipt_screening, ipt_screening_query = iptScreening(art_start)
-                    tbDocumented_result_count = documentedTb(ipt_screening_query)
-                    Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
-                    tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
-                    tbMonitoring = monitoringDataframe(tbStatus)
-
-                    st.markdown('<p class="tb">TB SCREENING </p>',
-                                unsafe_allow_html=True)
-                    tb_container = st.empty()
-                    with tb_container:
-                        st.table(tbMonitoring)
-
-                    states = df['State'].unique()
-                    col1, col2, col3 = st.columns(3)
-
-                    with col1:
-                        lgas, select_state, state = selectState(art_start, states)
-
-                    with col2:
-                        facilities, lga, select_lgas = selectLga(lgas, state)
-
-                    with col3:
-                        select_facilities = st.multiselect(
-                            'Select Facilities', facilities, key='facilities'
-                        )
-                        facilities = state.query('FacilityName == @select_facilities')
-
-                    with txnewContainer:
-                        txNewDisplay(art_start_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
-                                     transferIn_count)
-
-                    if select_state:
-                        txnewContainer.empty()
-                        tb_container.empty()
-                        tx_new = artStart(state)
-                        tx_new_state = artStart(tx_new)
-                        tx_new_count = tx_new_state['State'].count()
-                        cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
-                        pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
-                        transferIn_count = tranfer_IN(tx_new, trans_in)
-                        ipt_screening, ipt_screening_query = iptScreening(tx_new)
-                        tbDocumented_result_count = documentedTb(ipt_screening_query)
-                        Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
-                        tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
-                        tbMonitoring = monitoringDataframe(tbStatus)
-
-                        with tb_container:
-                            st.table(tbMonitoring)
-
-                        with txnewContainer:
-                            txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
-                                         transferIn_count)
-
-                    if select_lgas:
-                        txnewContainer.empty()
-                        tb_container.empty()
-                        tx_new = artStart(lga)
-                        tx_new_state = artStart(tx_new)
-                        tx_new_count = tx_new_state['State'].count()
-                        cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
-                        pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
-                        transferIn_count = tranfer_IN(tx_new, trans_in)
-                        ipt_screening, ipt_screening_query = iptScreening(tx_new)
-                        tbDocumented_result_count = documentedTb(ipt_screening_query)
-                        Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
-                        tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
-                        tbMonitoring = monitoringDataframe(tbStatus)
-
-                        with tb_container:
-                            st.table(tbMonitoring)
-
-                        with txnewContainer:
-                            txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
-                                         transferIn_count)
-                    if select_facilities:
-                        txnewContainer.empty()
-                        tb_container.empty()
-                        tx_new = artStart(facilities)
-                        tx_new_state = artStart(tx_new)
-                        tx_new_count = tx_new_state['State'].count()
-                        cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
-                        pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
-                        transferIn_count = tranfer_IN(tx_new, trans_in)
-                        ipt_screening, ipt_screening_query = iptScreening(tx_new)
-                        tbDocumented_result_count = documentedTb(ipt_screening_query)
-                        Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
-                        tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
-                        tbMonitoring = monitoringDataframe(tbStatus)
-
-                        with tb_container:
-                            st.table(tbMonitoring)
-
-                        with txnewContainer:
-                            txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
-                                         transferIn_count)
-
-                        pieChart = {'Name': ["TX_NEW", "TRANSFER IN", "PBS", "CD4 COUNT", "TB SCREENING",
-                                             "TB STATUS OUTCOMES", "DOCUMENTED TB RESULTS"],
-                                    'values': [tx_new_count, transferIn_count, pbs_count, cd4_count_result,
-                                               ipt_screening, Current_TB_Status_count, tbDocumented_result_count]}
+                        pieChart = {'Name': ["TX_CURR", "Eligible", "Documented", "Suppressed"],
+                                    'values': [treatmentCurrent, vLEligibleCount, documentedViralload, suppressedVl]}
                         pieChart = pd.DataFrame(pieChart)
 
                         p = (
-                            Pie(init_opts=opts.InitOpts(width="1200px", height="700px"))
+                            Pie(init_opts=opts.InitOpts(width="900px", height="500px"))
                                 .add(
                                 "",
                                 [list(z) for z in zip(pieChart['Name'], pieChart['values'])],
                                 radius=["40%", "75%"],
                             )
                                 .set_colors(["green", "red", "orange", "purple"])
-                                .set_global_opts(
-                                title_opts=opts.TitleOpts(title="TREATMENT NEW"),
-                                legend_opts=opts.LegendOpts(orient="vertical", pos_top="10%", pos_right="%"),
-                            )
 
-                                .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=12)
+                                .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=20)
 
                                                  )
                                 .render_embed()
                         )
-                        components.html(p, width=1200, height=800)
+                        components.html(p, width=900, height=800)
+                        # l = (
+                        #     Liquid()
+                        #     .add('lq', [vlCoverage/100], center=["25%", "50%"])
+                        #     .set_global_opts(
+                        #         title_opts = opts.TitleOpts(title ='VL Coverage', pos_left='15%')
+                        #     )
+
+                        # )
+                        # g = (
+                        #     Liquid()
+                        #     .add('lq', [suppressionRate/100],center=["80%", "50%"] )
+                        #     .set_global_opts(
+                        #         title_opts = opts.TitleOpts(title ='Supperession Rate', pos_left='70%')
+                        #     )
+
+                        # )
+                        # grid = Grid().add(l, grid_opts=opts.GridOpts()).add(g, grid_opts=opts.GridOpts())
+                        # grid.render_embed()
+
+                        # components.html(grid.render_embed(), width=1000, height=500)
+                        # with pi1:
+                        #     components.html(l,width=1000, height=500)
+                        # with pi2:
+                        #     components.html(g,width=1000, height=500)
+
+                if choice == 'Treatment New':
+
+                    if data is not None:
+                        placeholder.empty()
+
+                        df['ARTStartDate'] = dateConverter(df.ARTStartDate)
+                        dt1, dt2 = st.columns(2)
+                        with dt1:
+                            # start date
+                            firstDate()
+                            start_date = firstDate.start_date
+
+                        with dt2:
+                            # end date
+                            SecondDate()
+                            end_date = SecondDate.end_date
+
+                        art_start = artStart(df)
+                        art_start_count = art_start['PepID'].count()
+                        cd4CountCoverage, cd4_count_result = cd4_counts(art_start, art_start_count)
+                        pbsCoverage, pbs_count = pbsCheck(art_start, art_start_count)
+                        transferIn_count = tranfer_IN(df, trans_in)
+                        ipt_screening, ipt_screening_query = iptScreening(art_start)
+                        tbDocumented_result_count = documentedTb(ipt_screening_query)
+                        Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                        tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                        tbMonitoring = monitoringDataframe(tbStatus)
+
+                        st.markdown('<p class="tb">TB SCREENING </p>',
+                                    unsafe_allow_html=True)
+                        tb_container = st.empty()
+
+                        with tb_container:
+                            st.table(tbMonitoring)
+
+                        states = df['State'].unique()
+                        col1, col2, col3 = st.columns(3)
+
+                        with col1:
+                            lgas, select_state, state = selectState(art_start, states)
+
+                        with col2:
+                            facilities, lga, select_lgas = selectLga(lgas, state)
+
+                        with col3:
+                            select_facilities = st.multiselect(
+                                'Select Facilities', facilities, key='facilities'
+                            )
+                            facilities = state.query('FacilityName == @select_facilities')
+
+                        with txnewContainer:
+                            txNewDisplay(art_start_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                         transferIn_count)
+                        btn_download = st.empty()
+                        with btn_download:
+                            download(art_start, convert_df, key='btn1')
+
+                        if select_state:
+                            txnewContainer.empty()
+                            tb_container.empty()
+                            btn_download.empty()
+                            tx_new = artStart(state)
+                            tx_new_state = artStart(tx_new)
+                            tx_new_count = tx_new_state['State'].count()
+                            cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
+                            pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
+                            transferIn_count = tranfer_IN(tx_new, trans_in)
+                            ipt_screening, ipt_screening_query = iptScreening(tx_new)
+                            tbDocumented_result_count = documentedTb(ipt_screening_query)
+                            Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                            tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                            tbMonitoring = monitoringDataframe(tbStatus)
+
+                            with tb_container:
+                                st.table(tbMonitoring)
+
+                            with txnewContainer:
+                                txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                             transferIn_count)
+                            with btn_download:
+                                download(tx_new, convert_df, key="btn2")
+
+                        if select_lgas:
+                            txnewContainer.empty()
+                            tb_container.empty()
+                            btn_download.empty()
+                            tx_new = artStart(lga)
+                            tx_new_state = artStart(tx_new)
+                            tx_new_count = tx_new_state['State'].count()
+                            cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
+                            pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
+                            transferIn_count = tranfer_IN(tx_new, trans_in)
+                            ipt_screening, ipt_screening_query = iptScreening(tx_new)
+                            tbDocumented_result_count = documentedTb(ipt_screening_query)
+                            Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                            tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                            tbMonitoring = monitoringDataframe(tbStatus)
+
+                            with tb_container:
+                                st.table(tbMonitoring)
+
+                            with txnewContainer:
+                                txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                             transferIn_count)
+                            with btn_download:
+                                download(tx_new, convert_df, key="btn3")
+
+                        if select_facilities:
+                            txnewContainer.empty()
+                            tb_container.empty()
+                            btn_download.empty()
+                            tx_new = artStart(facilities)
+                            tx_new_state = artStart(tx_new)
+                            tx_new_count = tx_new_state['State'].count()
+                            cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
+                            pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
+                            transferIn_count = tranfer_IN(tx_new, trans_in)
+                            ipt_screening, ipt_screening_query = iptScreening(tx_new)
+                            tbDocumented_result_count = documentedTb(ipt_screening_query)
+                            Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
+                            tbStatus = tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count)
+                            tbMonitoring = monitoringDataframe(tbStatus)
+
+                            with tb_container:
+                                st.table(tbMonitoring)
+
+                            with txnewContainer:
+                                txNewDisplay(tx_new_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
+                                             transferIn_count)
+                            with btn_download:
+                                download(tx_new, convert_df, key="btn4")
+
+                            pieChart = {'Name': ["TX_NEW", "TRANSFER IN", "PBS", "CD4 COUNT", "TB SCREENING",
+                                                 "TB STATUS OUTCOMES", "DOCUMENTED TB RESULTS"],
+                                        'values': [tx_new_count, transferIn_count, pbs_count, cd4_count_result,
+                                                   ipt_screening, Current_TB_Status_count, tbDocumented_result_count]}
+                            pieChart = pd.DataFrame(pieChart)
+
+                            p = (
+                                Pie(init_opts=opts.InitOpts(width="950px", height="500px"))
+                                    .add(
+                                    "",
+                                    [list(z) for z in zip(pieChart['Name'], pieChart['values'])],
+                                    radius=["40%", "75%"],
+                                )
+                                    .set_colors(["green", "red", "orange", "purple"])
+                                    .set_global_opts(
+                                    title_opts=opts.TitleOpts(title="TREATMENT NEW"),
+                                    legend_opts=opts.LegendOpts(orient="vertical", pos_top="10%", pos_right="%"),
+                                )
+
+                                    .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=12)
+
+                                                     )
+                                    .render_embed()
+                            )
+
+                            components.html(p, width=950, height=500)
+            else:
+                st.warning("Kindly Reload and Upload ART line list")
+
     # REPORT MODULES
 
     if selected == 'Reports':
@@ -644,7 +668,7 @@ def main():
                 return df
 
             df = load_data2()
-            cleanDataSet()
+            cleanDataSet(df)
 
             df['Pharmacy_LastPickupdate'] = dateConverter(df.Pharmacy_LastPickupdate)
 
@@ -673,7 +697,7 @@ def main():
                 treatmentCurrent = tx_curr(df)
                 treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
 
-                art_start = artStart()
+                art_start = artStart(df)
                 art_start_count = art_start['PepID'].count()
 
                 pharm_start = pharm()
@@ -817,7 +841,7 @@ def main():
                         end_date = st.date_input(
                             "To", )
 
-                    art_start = artStart()
+                    art_start = artStart(df)
 
                     pharm_start_count = art_start['ARTStartDate'].count(
                     )

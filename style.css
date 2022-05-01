@@ -303,17 +303,14 @@ font-size: 15px;
 
 div.css-zx8yrj{
     font-family: Bookman Old Style, Bookman Old Style !important;
-    color: rgb(12, 12, 12);
-
+    font-size: 15px;
 }
-td.css-nhd13s{
+th.css-a51556{
     font-weight:600;
-    background-color: #f2f2f2;
-}
-th.css-asy5qd{
-    font-weight:800;
     color: rgb(12, 12, 12);
-
+}
+td.css-gdzsw5{
+    font-weight:bold;
 }
 .tb{
     text-align:center;
@@ -322,3 +319,5 @@ th.css-asy5qd{
     font-family: Bookman Old Style, Bookman Old Style !important;
     font-size:30px;
 }
+
+

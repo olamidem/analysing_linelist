@@ -6,12 +6,12 @@ from functions.tx_curr.treatmentCurrent import *
 from functions.tx_new.treatmentNew import *
 from functions.cleaningData.cleaningFunc import *
 from functions.tx_new.treatmentNew import *
+from functions.pieChart.pieChart import *
 import pandas as pd
 from datetime import timedelta
 from streamlit_option_menu import option_menu
 from dateutil.relativedelta import relativedelta
-from pyecharts import options as opts
-from pyecharts.charts import Pie
+
 import streamlit.components.v1 as components
 from PIL import Image
 
@@ -115,7 +115,6 @@ def main():
     #     st.header(fileName)
 
     def convert_df(filename):
-        # IMPORTANT: Cache the conversion to prevent computation on every rerun
         return filename.to_csv().encode('utf-8')
 
     def selectLga(lgas, state):
@@ -149,6 +148,11 @@ def main():
             menu_icon='cast',
             default_index=0,
         )
+        # horizontal menu
+    # selected2 = option_menu(None, ["Home", "Upload", "Tasks", 'Settings'],
+    #                             icons=['house', 'cloud-upload', "list-task", 'gear'],
+    #                             menu_icon="cast", default_index=0, orientation="horizontal")
+    # selected2
     if selected == 'Monitoring':
 
         st.markdown('<p class="font">Monitoring Dashboard💻</p>',
@@ -601,8 +605,21 @@ def main():
                         with btn_download:
                             download(art_start, convert_df, key='btn1')
 
+                        pieChartDisplay = st.empty()
+                        with pieChartDisplay:
+
+                            pieChart = pieChart_values(Current_TB_Status_count, cd4_count_result, ipt_screening,
+                                                       pbs_count, tbDocumented_result_count, transferIn_count,
+                                                       art_start_count)
+
+                            p = pieChart_dsiplay(pieChart)
+
+                            components.html(p, width=1000, height=500)
+
+
                         if select_state:
                             txnewContainer.empty()
+                            pieChartDisplay.empty()
                             tb_container.empty()
                             btn_download.empty()
                             tx_new = artStart(state)
@@ -626,10 +643,20 @@ def main():
                             with btn_download:
                                 download(tx_new, convert_df, key="btn2")
 
+                            with pieChartDisplay:
+                                pieChart = pieChart_values(Current_TB_Status_count, cd4_count_result, ipt_screening,
+                                                           pbs_count, tbDocumented_result_count, transferIn_count,
+                                                           tx_new_count)
+
+                                p = pieChart_dsiplay(pieChart)
+
+                                components.html(p, width=1000, height=500)
+
                         if select_lgas:
                             txnewContainer.empty()
                             tb_container.empty()
                             btn_download.empty()
+                            pieChartDisplay.empty()
                             tx_new = artStart(lga)
                             tx_new_state = artStart(tx_new)
                             tx_new_count = tx_new_state['State'].count()
@@ -651,10 +678,19 @@ def main():
                             with btn_download:
                                 download(tx_new, convert_df, key="btn3")
 
+                            with pieChartDisplay:
+                                pieChart = pieChart_values(Current_TB_Status_count, cd4_count_result, ipt_screening,
+                                                           pbs_count, tbDocumented_result_count, transferIn_count,
+                                                           tx_new_count)
+
+                                p = pieChart_dsiplay(pieChart)
+                                components.html(p, width=1000, height=500)
+
                         if select_facilities:
                             txnewContainer.empty()
                             tb_container.empty()
                             btn_download.empty()
+                            pieChartDisplay.empty()
                             tx_new = artStart(facilities)
                             tx_new_state = artStart(tx_new)
                             tx_new_count = tx_new_state['State'].count()
@@ -676,32 +712,14 @@ def main():
                             with btn_download:
                                 download(tx_new, convert_df, key="btn4")
 
-                            pieChart = {'Name': ["TX_NEW", "TRANSFER IN", "PBS", "CD4 COUNT", "TB SCREENING",
-                                                 "TB STATUS OUTCOMES", "DOCUMENTED TB RESULTS"],
-                                        'values': [tx_new_count, transferIn_count, pbs_count, cd4_count_result,
-                                                   ipt_screening, Current_TB_Status_count, tbDocumented_result_count]}
-                            pieChart = pd.DataFrame(pieChart)
+                            with pieChartDisplay:
+                                pieChart = pieChart_values(Current_TB_Status_count, cd4_count_result, ipt_screening,
+                                                           pbs_count, tbDocumented_result_count, transferIn_count,
+                                                           tx_new_count)
 
-                            p = (
-                                Pie(init_opts=opts.InitOpts(width="950px", height="500px"))
-                                    .add(
-                                    "",
-                                    [list(z) for z in zip(pieChart['Name'], pieChart['values'])],
-                                    radius=["40%", "75%"],
-                                )
-                                    .set_colors(["green", "red", "orange", "purple"])
-                                    .set_global_opts(
-                                    title_opts=opts.TitleOpts(title="TREATMENT NEW"),
-                                    legend_opts=opts.LegendOpts(orient="vertical", pos_top="10%", pos_right="%"),
-                                )
+                                p = pieChart_dsiplay(pieChart)
+                                components.html(p, width=1000, height=500)
 
-                                    .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=12)
-
-                                                     )
-                                    .render_embed()
-                            )
-
-                            components.html(p, width=950, height=500)
             else:
                 st.warning("Kindly Reload and Upload ART line list")
 
@@ -1246,6 +1264,7 @@ def main():
             'Tell us what you think of our webapp. We welcome your feedback')
 
 
+
 hide_streamlit_style = """
             <style>
             # MainMenu {visibility: hidden;}
@@ -1262,7 +1281,6 @@ hide_table_row_index = """
             </style>
             """
 
-# Inject CSS with Markdown
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
 if __name__ == '__main__':
     main()

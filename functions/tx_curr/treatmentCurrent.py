@@ -56,7 +56,7 @@ def txCurrReportFormat(tx_curr_report_table):
 def txReportDataframe( pbs_count, pbsCoverage,ipt_screening,Current_TB_Status_count,
                       tbDocumented_result_count,rtt_count, txML_count):
     tx_curr_report_table = {
-        'INDICATORS': ['TOTAL PBS CAPTURED', 'PBS COVERAGE (%)', 'TOTAL SCREENED FOR TB', 'TB SUSPECTED',
+        'INDICATORS': ['TOTAL PBS CAPTURED', 'PBS COVERAGE (%)', 'TOTAL SCREENED FOR TB', 'TB SUSPECT',
                        'DOCUMENTED TB RESULTS', 'RTT', 'TX_ML', 'INH PICKED', 'INH COMPLETED', 'POTENTIAL IIT'],
         'VALUES': [pbs_count, pbsCoverage, ipt_screening,
                    Current_TB_Status_count, tbDocumented_result_count, rtt_count, txML_count, 0, 0, 0]

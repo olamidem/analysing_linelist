@@ -27,7 +27,7 @@ def documentedTb(ipt_screening_query):
 
 def tbTable(Current_TB_Status_count, ipt_screening, tbDocumented_result_count):
     tbStatus = {
-        'TB SCREENING': ['TOTAL SCREENED FOR TB', 'TB SUSPECTED', 'DOCUMENTED TB RESULTS'],
+        'TB SCREENING': ['TOTAL SCREENED FOR TB', 'TB SUSPECT', 'DOCUMENTED TB RESULTS'],
         'VALUES': [ipt_screening, Current_TB_Status_count, tbDocumented_result_count]
     }
     return tbStatus

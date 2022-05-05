@@ -13,7 +13,7 @@ def pieChart_values(Current_TB_Status_count, cd4_count_result, ipt_screening, pb
 
 def pieChart_dsiplay(pieChart):
     p = (
-        Pie(init_opts=opts.InitOpts(width="1000px", height="500px"))
+        Pie(init_opts=opts.InitOpts(width="900px", height="500px"))
             .add(
             "",
             [list(z) for z in zip(pieChart['Name'], pieChart['values'])],

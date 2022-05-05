@@ -25,19 +25,28 @@ div.css-ps6290{
 div.css-18e3th9{
    padding: 0em 2em !important
 }
+
 header.css-vl8c1e{
     height: 0px !important;
 }
+
+header.css-vzp99e{
+   height: 0px !important;
+
+}
+div.css-1rwzxb9{
+    margin-top:10px;
+}
 div.css-1adrfps{
-    width:18rem !important;
-    padding: 4rem 1rem !important;
+    width:16rem !important;
+    padding: 1rem 1rem !important;
 }
 div.css-11fbze8{
     gap:rem !important
 }
 div.css-1oe6wy4{
     width:16rem !important;
-    padding: 4rem 1rem !important;
+    padding: 1rem 1rem !important;
 }
 
 div.css-1djdyxw{
@@ -55,7 +64,7 @@ span.css-10trblm.e16nr0p30{
 .font {
   font-size: 30px;
   font-family: "Cooper Black";
-  color: #ff9633;
+  color: #176c36;
 }
 
 div.element-container.css-1rlgw36.e1tzin5v3 {
@@ -299,7 +308,9 @@ font-size: 15px;
     flex: 0 0 100%;
   }
 }
-
+div.css-oxo5oj.e1tzin5v0{
+    gap:0.1rem;
+}
 
 div.css-zx8yrj{
     font-family: Bookman Old Style, Bookman Old Style !important;
@@ -320,6 +331,14 @@ th.css-a51556{
     color: rgb(23, 108, 54);
     font-family: Bookman Old Style, Bookman Old Style !important;
     font-size:30px;
+    text-decoration: underline;
 }
 
+[data-testid="stVerticalBlock"]{
+    gap:0.1rem;
+}
 
+div.menu .container-xxl[data-v-4323f8ce] {
+ background-color:#fbfcfe;
+ border-radius:.5rem
+}

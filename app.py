@@ -138,21 +138,26 @@ def main():
                   'Clinical Report']
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
-
     with st.sidebar:
-        selected = option_menu(
-            menu_title='DashBoard',  # required
+        emrlogo = Image.open('report.ico')
+        st.image(emrlogo,width = 200)
+
+    selected = option_menu(
+            menu_title= None,
             options=['Monitoring', 'Reports', 'EMR-NDR', 'Feedback'],
             icons=['pie-chart-fill', 'book',
                    'list-task', 'chat-square-text-fill'],
+            orientation= 'horizontal',
             menu_icon='cast',
             default_index=0,
+        styles={
+            "container": {"background-color": "#fff"},
+            # "icon": {"color": "orange", "font-size": "25px"},
+            "nav-link": {"--hover-color": "#eee"},
+            "nav-link-selected": {"background-color": "#176c36"},
+        }
         )
-        # horizontal menu
-    # selected2 = option_menu(None, ["Home", "Upload", "Tasks", 'Settings'],
-    #                             icons=['house', 'cloud-upload', "list-task", 'gear'],
-    #                             menu_icon="cast", default_index=0, orientation="horizontal")
-    # selected2
+
     if selected == 'Monitoring':
 
         st.markdown('<p class="font">Monitoring Dashboard💻</p>',
@@ -172,7 +177,7 @@ def main():
         if data is not None:
             if data not in st.session_state:
                 st.session_state.data = data.name
-            placeholder.empty()
+            
 
             # fileName(data)
 
@@ -186,18 +191,23 @@ def main():
             columns2 = [df.columns[12]]
             if [columns] == [columns2]:
                 cleanDataSet(df)
-                report_date = st.date_input("Select your reporting date", )
+                st.markdown('<br>',
+                            unsafe_allow_html=True)
 
-                choice = st.selectbox(
-                    'What would you like to Analyse?', activities)
+                with st.sidebar:
+                    choice = st.selectbox(
+                        'Select Indicator', activities)
 
                 if choice == 'Treatment Current':
                     if choice is not None:
+
+                        st.markdown('<br>',
+                                    unsafe_allow_html=True)
                         st.markdown('<p class="tb">TX_CURR REPORT </p>',
                                     unsafe_allow_html=True)
+
                         txCurrPlaceholder = st.empty()
                         placeholder.empty()
-                        dt1, dt2 = st.columns(2)
                         treatmentCurrent = tx_curr(df)
                         treatmentCurrent_count = txCurr(treatmentCurrent)
                         countMale = maleTxCurr(treatmentCurrent)
@@ -220,15 +230,20 @@ def main():
                         dataVariable = tx_curr(df)
 
                         states = dataVariable['State'].unique()
-                        col1, col2, col3 = st.columns(3)
 
-                        with col1:
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
                             lgas, select_state, state = selectState(dataVariable, states)
 
-                        with col2:
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
                             facilities, lga, select_lgas = selectLga(lgas, state)
 
-                        with col3:
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
                             select_facilities = st.multiselect(
                                 'Select Facilities', facilities, key='facilities'
                             )
@@ -339,8 +354,13 @@ def main():
 
                 if choice == 'Viral-Load Cascade':
                     if choice is not None:
+
+                        report_date = st.date_input("Select your reporting date", )
+                        st.markdown('<br>',
+                                    unsafe_allow_html=True)
+
                         treatmentCurrent = tx_curr(df)
-                        treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
+                        treatmentCurrent_count = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
 
                         #######################ELIGIBLE ####################
                         dataVariable = df.query('CurrentARTStatus_Pharmacy == "Active"  & ARTStartDate != "" ')
@@ -397,6 +417,33 @@ def main():
                         # #######################VL COVERAGE ####################
                         vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
 
+                        st.markdown('<p class="tb">VIRAL LOAD CASCADE </p>',
+                                    unsafe_allow_html=True)
+
+                        states = df['State'].unique()
+
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
+                            lgas, select_state, state = selectState(treatmentCurrent, states)
+
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
+                            facilities, lga, select_lgas = selectLga(lgas, state)
+
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
+                            select_facilities = st.multiselect(
+                                'Select Facilities', facilities, key='facilities'
+                            )
+                            facilities = state.query('FacilityName == @select_facilities')
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
+
                         vlCascade = {
                             'INDICATORS': ['TX Current', 'VL Eligible', 'VL sample taken and sent to PCR Lab',
                                            'VL results received and entered into patients folders/EMR',
@@ -405,7 +452,7 @@ def main():
                                            'VL eligible samples not yet taken.',
                                            'VL Suppressed (Less than 1000 copies /ml)',
                                            'VL Suppression (%)'],
-                            'VALUES': [treatmentCurrent, vLEligibleCount, vlSentToLab, documentedViralload,
+                            'VALUES': [treatmentCurrent_count, vLEligibleCount, vlSentToLab, documentedViralload,
                                        vlCoverage, vlAwaiting_Result_count, vlSamplesNotYet, suppressedVl,
                                        suppressionRate]
                         }
@@ -416,78 +463,32 @@ def main():
                         vlCascade = vlCascade.set_index('INDICATORS').transpose()
                         st.table(vlCascade)
 
-                        #######################VL COVERAGE ####################
-                        # df = tx_curr(df)
-                        # col1, col2, col3, filterByState, states = filterBy(df)
-                        #
-                        # if filterByState:
-                        #     with col1:
-                        #         lgas, state = selectState(df, states)
-                        #         treatmentCurrent = tx_curr(state)
-                        #         treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
-                        #
-                        #         vLEligible = viralLoadEligible(state)
-                        #         vLEligibleCount = vLEligible['DaysOnart'].count()
-                        #
-                        #         vl_documented = documented_viralload(dateConverter, state, report_date, viralLoadEligible)
-                        #         documentedViralload = vl_documented['PepID'].count()
-                        #
-                        #         suppressedVl = suppressed_viral_load(vl_documented)
-                        #         suppressedVl = suppressedVl.CurrentViralLoad.count()
-                        #
-                        #         suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
-                        #
-                        #         vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
 
-                        # with col2:
-                        #     facilities, lga = selectLga(lgas, state)
-
-                        # treatmentCurrent = tx_curr(lga)
-                        # treatmentCurrent = treatmentCurrent['CurrentARTStatus_Pharmacy'].count()
-                        #
-                        # vLEligible = viralLoadEligible(state)
-                        # vLEligibleCount = vLEligible['DaysOnart'].count()
-                        #
-                        # vl_documented = documented_viralload(dateConverter, lga, report_date, viralLoadEligible)
-                        # documentedViralload = vl_documented['PepID'].count()
-                        #
-                        # suppressedVl = suppressed_viral_load(vl_documented)
-                        # suppressedVl = suppressedVl.CurrentViralLoad.count()
-                        #
-                        # suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
-                        #
-                        # vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
-
-                        # with col3:
-                        #     select_facilities = st.multiselect(
-                        #         'WSelect one or more Facilities', facilities, key='facilities'
-                        #     )
-                        #     facilities = state.query('FacilityName == @select_facilities')
 
                         with all_card:
                             st.markdown(f"""
                                             <div class="container">
                                             <div class="card">
                                                 <div class="title">
-                                                Tx_Curr<span>{"{0:n}".format(treatmentCurrent)}</span>
+                                                Tx_Curr<span>{f'{treatmentCurrent_count:,d}'}</span>
                                                 </div>
                                             </div>
     
                                             <div class="card">
                                                 <div class="title">
-                                                VL Eligible<span>{"{0:n}".format(vLEligibleCount)}</span>
+                                                VL Eligible<span>{f'{vLEligibleCount:,d}'}</span>
                                                 </div>
                                             </div>
     
                                             <div class="card">
                                                 <div class="title">
-                                                Documented VL<span>{"{0:n}".format(documentedViralload)}</span>
+                                                Documented VL<span>{f'{documentedViralload:,d}'}</span>
                                                 </div>
                                             </div>
     
                                             <div class="card">
                                                 <div class="title">
-                                                Suppressed VL<span>{"{0:n}".format(suppressedVl)}</span>
+                                                Suppressed VL<span>{f'{suppressedVl:,d}'}</span>
                                                 </div>
                                             </div>
                                             <div class="card">
@@ -504,8 +505,9 @@ def main():
                                             </div>
                                             """, unsafe_allow_html=True)
 
+
                         pieChart = {'Name': ["TX_CURR", "Eligible", "Documented", "Suppressed"],
-                                    'values': [treatmentCurrent, vLEligibleCount, documentedViralload, suppressedVl]}
+                                    'values': [treatmentCurrent_count, vLEligibleCount, documentedViralload, suppressedVl]}
                         pieChart = pd.DataFrame(pieChart)
 
                         p = (
@@ -515,14 +517,14 @@ def main():
                                 [list(z) for z in zip(pieChart['Name'], pieChart['values'])],
                                 radius=["40%", "75%"],
                             )
-                                .set_colors(["green", "red", "orange", "purple"])
+                                # .set_colors(["green", "red", "orange", "purple"])
 
                                 .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}", font_size=20)
 
                                                  )
                                 .render_embed()
                         )
-                        components.html(p, width=900, height=800)
+                        components.html(p, width=900, height=500)
                         # l = (
                         #     Liquid()
                         #     .add('lq', [vlCoverage/100], center=["25%", "50%"])
@@ -564,12 +566,12 @@ def main():
                             # end date
                             SecondDate()
                             end_date = SecondDate.end_date
-
+                        transferIn = trans_in(df)
                         art_start = artStart(df)
                         art_start_count = art_start['PepID'].count()
                         cd4CountCoverage, cd4_count_result = cd4_counts(art_start, art_start_count)
                         pbsCoverage, pbs_count = pbsCheck(art_start, art_start_count)
-                        transferIn_count = tranfer_IN(df, trans_in)
+                        transferIn_count = transferIn['State'].count()
                         ipt_screening, ipt_screening_query = iptScreening(art_start)
                         tbDocumented_result_count = documentedTb(ipt_screening_query)
                         Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
@@ -584,19 +586,28 @@ def main():
                             st.table(tbMonitoring)
 
                         states = df['State'].unique()
-                        col1, col2, col3 = st.columns(3)
 
-                        with col1:
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
                             lgas, select_state, state = selectState(art_start, states)
 
-                        with col2:
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
                             facilities, lga, select_lgas = selectLga(lgas, state)
 
-                        with col3:
+                        with st.sidebar:
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
                             select_facilities = st.multiselect(
                                 'Select Facilities', facilities, key='facilities'
                             )
                             facilities = state.query('FacilityName == @select_facilities')
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
+                            st.markdown('<br>',
+                                        unsafe_allow_html=True)
 
                         with txnewContainer:
                             txNewDisplay(art_start_count, cd4CountCoverage, cd4_count_result, pbs_count, pbsCoverage,
@@ -614,7 +625,7 @@ def main():
 
                             p = pieChart_dsiplay(pieChart)
 
-                            components.html(p, width=1000, height=500)
+                            components.html(p, width=900, height=500)
 
 
                         if select_state:
@@ -623,11 +634,11 @@ def main():
                             tb_container.empty()
                             btn_download.empty()
                             tx_new = artStart(state)
-                            tx_new_state = artStart(tx_new)
-                            tx_new_count = tx_new_state['State'].count()
+                            tx_new_count = tx_new['State'].count()
                             cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
                             pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
-                            transferIn_count = tranfer_IN(tx_new, trans_in)
+                            transferin_check = transferIn.query('State == @select_state')
+                            transferIn_count = transferin_check['State'].count()
                             ipt_screening, ipt_screening_query = iptScreening(tx_new)
                             tbDocumented_result_count = documentedTb(ipt_screening_query)
                             Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
@@ -650,7 +661,7 @@ def main():
 
                                 p = pieChart_dsiplay(pieChart)
 
-                                components.html(p, width=1000, height=500)
+                                components.html(p, width=900, height=500)
 
                         if select_lgas:
                             txnewContainer.empty()
@@ -662,7 +673,8 @@ def main():
                             tx_new_count = tx_new_state['State'].count()
                             cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
                             pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
-                            transferIn_count = tranfer_IN(tx_new, trans_in)
+                            transferin_check = transferIn.query('LGA == @select_lgas')
+                            transferIn_count = transferin_check['State'].count()
                             ipt_screening, ipt_screening_query = iptScreening(tx_new)
                             tbDocumented_result_count = documentedTb(ipt_screening_query)
                             Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
@@ -684,7 +696,7 @@ def main():
                                                            tx_new_count)
 
                                 p = pieChart_dsiplay(pieChart)
-                                components.html(p, width=1000, height=500)
+                                components.html(p, width=900, height=500)
 
                         if select_facilities:
                             txnewContainer.empty()
@@ -696,7 +708,8 @@ def main():
                             tx_new_count = tx_new_state['State'].count()
                             cd4CountCoverage, cd4_count_result = cd4_counts(tx_new, tx_new_count)
                             pbsCoverage, pbs_count = pbsCheck(tx_new, tx_new_count)
-                            transferIn_count = tranfer_IN(tx_new, trans_in)
+                            transferin_check = transferIn.query('FacilityName == @select_facilities')
+                            transferIn_count = transferin_check['State'].count()
                             ipt_screening, ipt_screening_query = iptScreening(tx_new)
                             tbDocumented_result_count = documentedTb(ipt_screening_query)
                             Current_TB_Status_count = CurrentTbStatus(ipt_screening_query)
@@ -718,7 +731,7 @@ def main():
                                                            tx_new_count)
 
                                 p = pieChart_dsiplay(pieChart)
-                                components.html(p, width=1000, height=500)
+                                components.html(p, width=900, height=500)
 
             else:
                 st.warning("Kindly Reload and Upload ART line list")

@@ -138,9 +138,12 @@ def main():
                   'Clinical Report']
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
-    with st.sidebar:
-        # emrlogo = Image.open('cpu.png')
-        st.image('cpu.png',width = 200)
+    # with st.sidebar:
+    #     # emrlogo = Image.open('cpu.png')
+    #     st.image('cpu.png',width = 200, caption = '')
+    with st.sidebar.container():
+        image = Image.open('cpu.png')
+        st.image(image,width = 200)
 
     selected = option_menu(
             menu_title= None,

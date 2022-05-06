@@ -342,3 +342,7 @@ div.menu .container-xxl[data-v-4323f8ce] {
  background-color:#fbfcfe;
  border-radius:.5rem
 }
+p.side-icon{
+    font-size: 75px;
+    text-align: center;
+}

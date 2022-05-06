@@ -138,8 +138,11 @@ def main():
                   'Clinical Report']
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
+
     with st.sidebar:
-        st.image('cpu.png',width = 200,)
+        # st.image('cpu.png',width = 200,)
+        st.markdown('<p class="side-icon">💻</p>',
+                    unsafe_allow_html=True)
 
     selected = option_menu(
             menu_title= None,

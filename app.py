@@ -138,12 +138,8 @@ def main():
                   'Clinical Report']
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
-    # with st.sidebar:
-    #     # emrlogo = Image.open('cpu.png')
-    #     st.image('cpu.png',width = 200, caption = '')
-    with st.sidebar.container():
-        image = Image.open('https://p7.hiclipart.com/preview/771/339/686/financial-statement-analysis-report-management-analytics-marketing.jpg')
-        st.image(image,width = 200)
+    with st.sidebar:
+        st.image('cpu.png',width = 200,)
 
     selected = option_menu(
             menu_title= None,

@@ -139,7 +139,7 @@ def main():
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
     with st.sidebar:
-        emrlogo = Image.open('report.ico')
+        emrlogo = Image.open('cpu.png')
         st.image(emrlogo,width = 200)
 
     selected = option_menu(
@@ -177,7 +177,7 @@ def main():
         if data is not None:
             if data not in st.session_state:
                 st.session_state.data = data.name
-            
+
 
             # fileName(data)
 

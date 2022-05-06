@@ -139,7 +139,8 @@ def main():
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
     with st.sidebar:
-        emrlogo = Image.open('cpu.png')
+        url = 'cpu.png'
+        emrlogo = Image.open(url)
         st.image(emrlogo,width = 200)
 
     selected = option_menu(

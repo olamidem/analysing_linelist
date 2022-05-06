@@ -1,7 +1,7 @@
 from func import *
 from functions.download.downloadFun import *
 from functions.tx_new.tx_new_display import *
-from tx_curr_card import *
+from functions.tx_curr.tx_curr_card import *
 from functions.tx_curr.treatmentCurrent import *
 from functions.tx_new.treatmentNew import *
 from functions.cleaningData.cleaningFunc import *
@@ -139,9 +139,8 @@ def main():
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
     with st.sidebar:
-        url = 'cpu.png'
-        emrlogo = Image.open(url)
-        st.image(emrlogo,width = 200)
+        # emrlogo = Image.open('cpu.png')
+        st.image('cpu.png',width = 200)
 
     selected = option_menu(
             menu_title= None,

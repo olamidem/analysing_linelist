@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 def displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed, treatmentCurrent_count):
     st.markdown(f"""
                                             <div class="container">

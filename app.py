@@ -9,6 +9,7 @@ from functions.pie_chart.pieChart import *
 from functions.bar_chart.bar_chart import *
 from functions.viral_load.viral_load_card import *
 from functions.age_grouping.age_grouping import *
+from functions.viral_load.viral_load_calc import *
 import pandas as pd
 from datetime import timedelta
 from streamlit_option_menu import option_menu
@@ -135,8 +136,7 @@ def main():
         lgas = state['LGA'].unique()
         return lgas, select_state, state
 
-    activities = ['', 'Treatment New', 'Treatment Current', 'Viral-Load Cascade',
-                  'Clinical Report']
+    activities = select_activities()
     reports = ['', 'HI Weekly Report',
                'M&E Weekly Report', 'M&E Monthly Report']
 
@@ -1506,13 +1506,7 @@ def main():
                         output()
 
     if selected == 'EMR-NDR':
-        c1,c2,c3 = st.columns(3)
-        ndrlogo = Image.open('ndr.png')
-        emrlogo = Image.open('emr.png')
-        c3.image(ndrlogo, width=50)
-        c1.image(emrlogo, width=50, )
-        
-        st.markdown('<p class="font">EMR VS NDR</p>',
+        st.markdown('<p class="font">EMR VS NDR 📝</p>',
                     unsafe_allow_html=True)
 
         placeholder = st.empty()
@@ -1526,26 +1520,27 @@ def main():
         if emr is not None:
             @st.cache(allow_output_mutation=True)
             def load_data3():
-                df_emr = pd.read_csv(emr, encoding='unicode_escape')
+                df_emr = pd.read_csv(emr, encoding='unicode_escape',on_bad_lines='skip')
                 return df_emr
-                cleanDataSet(df_emr)
             df_emr = load_data3()
+            cleanDataSet(df_emr)
+
         if ndr is not None:
             placeholder.empty()
             ndrholder.empty()
             @st.cache(allow_output_mutation=True)
             def load_data4():
-                df_ndr = pd.read_csv(ndr, encoding='unicode_escape')
+                df_ndr = pd.read_csv(ndr, encoding='unicode_escape',on_bad_lines='skip')
                 return df_ndr
             df_ndr = load_data4()
-            cleanDataSet(df_ndr)
 
-            df_ndr
+        with st.sidebar:
+            choice = st.selectbox('Select Indicator', activities)
+        if choice == 'Treatment New':
+            st.write(df_ndr['Current Status (28 Days)'].value_counts())
+            st.write(df_emr['CurrentARTStatus_Pharmacy'].value_counts())
 
-            # columns = ['ARTStartDate']
-            # columns2 = [df.columns[12]]
-            # if [columns] == [columns2]:
-            #     cleanDataSet(df)
+
 
 
 
@@ -1555,6 +1550,12 @@ def main():
         st.subheader('Help us improve!!!.')
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
+
+
+def select_activities():
+    activities = ['', 'Treatment New', 'Treatment Current', 'Viral-Load Cascade',
+                  'Clinical Report']
+    return activities
 
 
 def pie_chart(documentedViralload, suppressedVl, treatmentCurrent_count, vLEligibleCount):
@@ -1576,57 +1577,6 @@ def pie_chart(documentedViralload, suppressedVl, treatmentCurrent_count, vLEligi
             .render_embed()
     )
     components.html(p, width=900, height=500)
-
-
-def vl_cascade_calc(documentedViralload, suppressedVl, suppressionRate, treatmentCurrent_count, vLEligibleCount,
-                    vlAwaiting_Result_count, vlCoverage, vlSamplesNotYet, vlSentToLab):
-    vlCascade = {
-        'INDICATORS': ['TX Current', 'VL Eligible', 'VL sample taken and sent to PCR Lab',
-                       'VL results received and entered into patients folders/EMR',
-                       'VL Coverage (%)',
-                       'VL eligible sample collected but awaiting results',
-                       'VL eligible samples not yet taken.',
-                       'VL Suppressed (Less than 1000 copies /ml)',
-                       'VL Suppression (%)'],
-        'VALUES': [treatmentCurrent_count, vLEligibleCount, vlSentToLab, documentedViralload,
-                   vlCoverage, vlAwaiting_Result_count, vlSamplesNotYet, suppressedVl,
-                   suppressionRate]
-    }
-    vlCascade = pd.DataFrame(vlCascade)
-    vlCascade['VALUES'] = ["{0:n}".format(int(x)) for x in vlCascade['VALUES']]
-    vlCascade['VALUES'] = ["{:,}".format(int(x)) for x in vlCascade['VALUES']]
-    vlCascade = vlCascade.set_index('INDICATORS').transpose()
-    return vlCascade
-
-
-def sample_sent_awaiting(dateConverter, report_date, vLEligible):
-    startDate = report_date + timedelta(days=-90)
-    endDate = report_date
-    vLEligible['LastDateOfSampleCollection'] = dateConverter(
-        vLEligible['LastDateOfSampleCollection'])
-    vLEligible['LastDateOfSampleCollection'] = vLEligible['LastDateOfSampleCollection'].dt.date
-    vlAwaitingResult = vLEligible.query(
-        'LastDateOfSampleCollection <= @endDate & LastDateOfSampleCollection >= @startDate ')
-    vlAwaitingResult['DateofCurrentViralLoad'] = dateConverter(
-        vlAwaitingResult['DateofCurrentViralLoad'])
-    vlAwaitingResult['DateofCurrentViralLoad'] = vlAwaitingResult['DateofCurrentViralLoad'].dt.date
-    pickDate = report_date + timedelta(days=-365)
-    vlAwaiting_Result = vlAwaitingResult.query('DateofCurrentViralLoad <= @pickDate')
-    return vlAwaiting_Result
-
-
-def viral_load_eligible_calc(dateConverter, report_date, vl_data):
-    vl_data['Ref_Date'] = report_date
-    vl_data['ARTStartDate'] = dateConverter(vl_data['ARTStartDate'])
-    vl_data['ARTStartDate'] = vl_data['ARTStartDate']
-    vl_data['DaysOnart'] = (
-            vl_data['Ref_Date'] - vl_data['ARTStartDate']).dt.days
-
-    def viralLoadEligible(dataSet):
-        return dataSet.query(
-            ' DaysOnart >= 180  & CurrentARTStatus_Pharmacy == "Active" & Outcomes == "" ')
-
-    return viralLoadEligible
 
 
 hide_streamlit_style = """

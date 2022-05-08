@@ -63,7 +63,7 @@ def txReportDataframe( pbs_count, pbsCoverage,ipt_screening,Current_TB_Status_co
                       tbDocumented_result_count,rtt_count, txML_count):
     tx_curr_report_table = {
         'INDICATORS': ['TOTAL PBS CAPTURED', 'PBS COVERAGE (%)', 'TOTAL SCREENED FOR TB', 'TB SUSPECT',
-                       'DOCUMENTED TB RESULTS', 'RTT', 'TX_ML'],
+                       'DOCUMENTED TB RESULT', 'RTT', 'TX_ML'],
         'VALUES': [pbs_count, pbsCoverage, ipt_screening,
                    Current_TB_Status_count, tbDocumented_result_count, rtt_count, txML_count]
                                # 'INH PICKED', 'INH COMPLETED', 'POTENTIAL IIT'

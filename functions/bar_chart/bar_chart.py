@@ -9,8 +9,8 @@ def bar_chart_display(female, male):
     c = (
         Bar()
             .add_xaxis(age_disaggregation)
-            .add_yaxis("MALE", male, gap="0%")
-            .add_yaxis("FEMALE", female, gap="0%")
+            .add_yaxis("MALE", male, gap="15%")
+            .add_yaxis("FEMALE", female, gap="15%")
             .set_global_opts(title_opts=opts.TitleOpts(title="Sex and Age Group", subtitle="CURRENT AGE"))
             .render_embed()
     )

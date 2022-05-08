@@ -1,5 +1,11 @@
 import pandas as pd
 
+def tx_curr(dataSet):
+    active = dataSet.query(
+        'CurrentARTStatus_Pharmacy == "Active" & Outcomes == ""  & ARTStartDate != ""  ')
+    return active
+
+
 def paedTxCurr(treatmentCurrent):
     paed = treatmentCurrent.query('Current_Age <10 ')
     countPaed = paed['Current_Age'].count()

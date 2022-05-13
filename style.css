@@ -38,14 +38,14 @@ div.css-1rwzxb9{
     margin-top:10px;
 }
 div.css-1adrfps{
-    width:16rem !important;
+    width:20rem !important;
     padding: 1rem 1rem !important;
 }
 div.css-11fbze8{
     gap:rem !important
 }
 div.css-1oe6wy4{
-    width:16rem !important;
+    width:20rem !important;
     padding: 1rem 1rem !important;
 }
 
@@ -347,14 +347,31 @@ p.side-icon{
     font-size: 75px;
     text-align: center;
 }
+div.sidebar{
+    background-color:rgb(23, 108, 54);
+    padding:10px;
+    text-align:center;
+    color:#fff;
+    font-weight:bold;
+    font-size:20px;
+    margin-bottom:20px;
 
+}
 div.css-18zesmw{
     text-align:center;
 }
 div.element-container.css-18edgy2.e1tzin5v3{
     text-align:center;
+
 }
 
 .row-widget.stDownloadButton{
     text-align:left;
+}
+[data-stale="false"]{
+    text-align:center;
+}
+
+div.container-xxl{
+    max-width:100%;
 }

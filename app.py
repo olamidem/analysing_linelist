@@ -1,9 +1,7 @@
 from datetime import timedelta
-
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 from streamlit_option_menu import option_menu
-
 from functions.age_grouping.age_grouping import *
 from functions.bar_chart.bar_chart import *
 from functions.cleaningData.cleaningFunc import *
@@ -16,7 +14,7 @@ from functions.tx_new.tx_new_display import *
 from functions.viral_load.viral_load_calc import *
 from functions.viral_load.viral_load_card import *
 
-st.set_page_config(page_title="Report Dashbooard 💻", page_icon="📑", layout="wide",
+st.set_page_config(page_title="Report Dashboard 💻", page_icon="📑", layout="wide",
                    initial_sidebar_state="auto", )
 
 with open('style.css') as f:
@@ -92,7 +90,7 @@ def main():
 
     def pharm():
         pharm_start = vl_data[(vl_data['Pharmacy_LastPickupdate'] >= str(start_date)) &  # type: ignore
-                         (vl_data['Pharmacy_LastPickupdate'] <= str(end_date))]  # type: ignore
+                              (vl_data['Pharmacy_LastPickupdate'] <= str(end_date))]  # type: ignore
         return pharm_start
 
     # def outComes():
@@ -145,10 +143,10 @@ def main():
                     unsafe_allow_html=True)
 
     selected = option_menu(
-            menu_title= None,
-            options=['Monitoring', 'Reports', 'EMR-NDR', 'Feedback'],
-            icons=['pie-chart-fill', 'book',
-                   'list-task', 'chat-square-text-fill'],
+        menu_title=None,
+        options=['Monitoring', 'Reports', 'EMR-NDR', 'Feedback'],
+        icons=['pie-chart-fill', 'book',
+               'list-task', 'chat-square-text-fill'],
         orientation='horizontal',
         menu_icon='cast',
         default_index=0,
@@ -184,7 +182,6 @@ def main():
                 st.session_state.data = data.name
                 placeholder.empty()
 
-
             # fileName(data)
 
             @st.cache(allow_output_mutation=True)
@@ -193,21 +190,20 @@ def main():
                 return df
 
             df = load_data1()
-            columns = ['ARTStartDate']
-            columns2 = [df.columns[12]]
-            if [columns] == [columns2]:
-                cleanDataSet(df)
-                st.markdown('<br>',
+            # columns = ['ARTStartDate']
+            # columns2 = [df.columns[14]]
+            # if [columns] == [columns2]:
+            cleanDataSet(df)
+            st.markdown('<br>',
                             unsafe_allow_html=True)
-
-                with st.sidebar:
-                    st.markdown('<br>',
+            with st.sidebar:
+                st.markdown('<br>',
                                 unsafe_allow_html=True)
-                    choice = st.selectbox(
+                choice = st.selectbox(
                         'Select Indicator', activities)
 
-                if choice == 'Treatment Current':
-                    if choice is not None:
+            if choice == 'Treatment Current':
+                if choice is not None:
 
                         st.markdown('<br>',
                                     unsafe_allow_html=True)
@@ -254,7 +250,6 @@ def main():
                                 'Select Facilities', facilities, key='facilities'
                             )
                             facilities = state.query('FacilityName == @select_facilities')
-
 
                         with all_card:
                             displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
@@ -321,8 +316,8 @@ def main():
                                 st.table(tx_curr_dataFrame)
 
                             with all_card:
-                                    displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
-                                                treatmentCurrent_count)
+                                displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                            treatmentCurrent_count)
 
                             with barChartDisplay:
                                 age_group = treatmentCurrent.query('Sex == "M" ')
@@ -352,7 +347,6 @@ def main():
                                 male = [int(i) for i in male]
 
                                 bar_chart_display(female, male)
-
 
                         if select_lgas:
                             all_card.empty()
@@ -476,9 +470,7 @@ def main():
 
                                 bar_chart_display(female, male)
 
-
-                if choice == 'Viral-Load Cascade':
-                    if choice is not None:
+            if choice == 'Viral-Load Cascade' and choice is not None:
                         placeholder.empty()
 
                         st.markdown('<br>',
@@ -568,6 +560,35 @@ def main():
                             pieChart = pie_chart_value(suppressedVl)
                             pie_chart_vload(pieChart)
 
+                        barChartDisplay = st.empty()
+                        with barChartDisplay:
+                            age_group = suppressedVl.query('Sex == "M" ')
+                            fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                            lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                            lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                                age_group)
+
+                            male = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                    lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                    lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                    lessthanforty_nine, fiftyplus]
+
+                            age_group_female = suppressedVl.query('Sex == "F" ')
+                            fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                            lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                            lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                                age_group_female)
+
+                            female = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                      lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                      lessthanthirty_four, lessthanthirty_nine, lessthanforty_four, lessthanforty_nine,
+                                      fiftyplus]
+
+                            female = [int(i) for i in female]
+                            male = [int(i) for i in male]
+
+                            bar_chart_suppressed_vl(female, male)
+
                         if select_state:
                             all_card.empty()
                             pie.empty()
@@ -586,7 +607,8 @@ def main():
                             vlAwaiting_Result_count = vlAwaiting_Result['DateofCurrentViralLoad'].count()
 
                             ####################### DOCUMENTED VL ####################
-                            vl_documented = documented_viralload(dateConverter, treatmentCurrent, report_date, viralLoadEligible)
+                            vl_documented = documented_viralload(dateConverter, treatmentCurrent, report_date,
+                                                                 viralLoadEligible)
                             documentedViralload = vl_documented['PepID'].count()
 
                             ####################### VL sample taken and sent to PCR Lab ####################
@@ -616,7 +638,8 @@ def main():
                             viral_load_display(documentedViralload, suppressedVl_count, suppressionRate,
                                                treatmentCurrent_count, vLEligibleCount, vlCoverage)
                         with pie:
-                            pass
+                            pieChart = pie_chart_value(suppressedVl)
+                            pie_chart_vload(pieChart)
 
                         if select_lgas:
                             all_card.empty()
@@ -636,7 +659,8 @@ def main():
                             vlAwaiting_Result_count = vlAwaiting_Result['DateofCurrentViralLoad'].count()
 
                             ####################### DOCUMENTED VL ####################
-                            vl_documented = documented_viralload(dateConverter, treatmentCurrent, report_date, viralLoadEligible)
+                            vl_documented = documented_viralload(dateConverter, treatmentCurrent, report_date,
+                                                                 viralLoadEligible)
                             documentedViralload = vl_documented['PepID'].count()
 
                             ####################### VL sample taken and sent to PCR Lab ####################
@@ -667,7 +691,8 @@ def main():
                                                    treatmentCurrent_count, vLEligibleCount, vlCoverage)
                             pie = st.empty()
                             with pie:
-                                pass
+                                pieChart = pie_chart_value(suppressedVl)
+                                pie_chart_vload(pieChart)
 
                         if select_facilities:
                             all_card.empty()
@@ -676,7 +701,7 @@ def main():
                             treatmentCurrent = tx_curr(facilities)
                             treatmentCurrent_count = txCurr(treatmentCurrent)
 
-                            #######################ELIGIBLE ####################
+                            # ######################ELIGIBLE ####################
                             viralLoadEligible = viral_load_eligible_calc(dateConverter, report_date, treatmentCurrent)
                             vLEligible = viralLoadEligible(treatmentCurrent)
                             vLEligibleCount = vLEligible['DaysOnart'].count()
@@ -687,7 +712,8 @@ def main():
                             vlAwaiting_Result_count = vlAwaiting_Result['DateofCurrentViralLoad'].count()
 
                             ####################### DOCUMENTED VL ####################
-                            vl_documented = documented_viralload(dateConverter, treatmentCurrent, report_date, viralLoadEligible)
+                            vl_documented = documented_viralload(dateConverter, treatmentCurrent, report_date,
+                                                                 viralLoadEligible)
                             documentedViralload = vl_documented['PepID'].count()
 
                             ####################### VL sample taken and sent to PCR Lab ####################
@@ -701,7 +727,7 @@ def main():
                             suppressedVl_count = suppressedVl.CurrentViralLoad.count()
 
                             # #######################SUPPRESSION RATE ####################
-                            suppressionRate = ((suppressedVl / documentedViralload) * 100).round(1)
+                            suppressionRate = ((suppressedVl_count / documentedViralload) * 100).round(1)
 
                             # #######################VL COVERAGE ####################
                             vlCoverage = ((documentedViralload / vLEligibleCount) * 100).round(1)
@@ -718,9 +744,10 @@ def main():
                                                    treatmentCurrent_count, vLEligibleCount, vlCoverage)
                             pie = st.empty()
                             with pie:
-                                pass
+                                pieChart = pie_chart_value(suppressedVl)
+                                pie_chart_vload(pieChart)
 
-                if choice == 'Treatment New' and data is not None:
+            if choice == 'Treatment New' and data is not None:
 
                     placeholder.empty()
 
@@ -805,21 +832,21 @@ def main():
                         lessthantwenty_four, lessthantwenty_nine = age_grouping(
                             age_group)
 
-                        male = [lessthanone,lessthanfour,lessthanten,lessthanfourteen,
-                                 lessthannineteen, lessthantwenty_four,lessthantwenty_nine,
-                                 lessthanthirty_four, lessthanthirty_nine,lessthanforty_four,
-                                lessthanforty_nine,fiftyplus ]
+                        male = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                lessthanforty_nine, fiftyplus]
 
                         age_group_female = art_start.query('Sex == "F" ')
-                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen,\
+                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
                         lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
                         lessthantwenty_four, lessthantwenty_nine = age_grouping(
                             age_group_female)
 
                         female = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
-                                lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
-                                lessthanthirty_four, lessthanthirty_nine, lessthanforty_four, lessthanforty_nine,
-                                fiftyplus]
+                                  lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                  lessthanthirty_four, lessthanthirty_nine, lessthanforty_four, lessthanforty_nine,
+                                  fiftyplus]
 
                         female = [int(i) for i in female]
                         male = [int(i) for i in male]
@@ -945,7 +972,6 @@ def main():
 
                             bar_chart_display(female, male)
 
-
                     if select_facilities:
                         txnewContainer.empty()
                         tb_container.empty()
@@ -1005,7 +1031,7 @@ def main():
                             male = [int(i) for i in male]
 
                             bar_chart_display(female, male)
-                if choice == 'Clinical Report':
+            if choice == 'Clinical Report':
                     st.info('MMD <3')
                     st.warning('MMD 3')
                     st.success('MMD 4')
@@ -1014,9 +1040,10 @@ def main():
                     st.success('MISS APPOINTMENT')
                     st.info('IIT')
                     st.warning('POTENTIAL IIT')
+                    st.success('UNSUPPRESSED VL')
+                    st.info('LOW-LEVEL VL')
 
-            else:
-                st.warning("Kindly Reload and Upload ART line list")
+
 
     # REPORT MODULES
 
@@ -1317,8 +1344,9 @@ def main():
                         # end date
                         SecondDate()
 
-                    art_start = vl_data[(vl_data['DateofCurrentViralLoad'] >= str(firstDate.start_date)) &  # type: ignore
-                                   (vl_data['DateofCurrentViralLoad'] <= str(SecondDate.end_date))]  # type: ignore
+                    art_start = vl_data[
+                        (vl_data['DateofCurrentViralLoad'] >= str(firstDate.start_date)) &  # type: ignore
+                        (vl_data['DateofCurrentViralLoad'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
@@ -1361,7 +1389,7 @@ def main():
 
                         art_start = vl_data[
                             (vl_data['DateofCurrentViralLoad'] >= str(firstDate.start_date)) &  # type: ignore
-                                       (vl_data['DateofCurrentViralLoad'] <= str(SecondDate.end_date))]  # type: ignore
+                            (vl_data['DateofCurrentViralLoad'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = art_start['DateofCurrentViralLoad'].count(
                     )
@@ -1402,8 +1430,9 @@ def main():
                         # end date
                         SecondDate()
 
-                    pharm_start = vl_data[(vl_data['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
-                                     (vl_data['Pharmacy_LastPickupdate'] <= str(SecondDate.end_date))]  # type: ignore
+                    pharm_start = vl_data[
+                        (vl_data['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
+                        (vl_data['Pharmacy_LastPickupdate'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -1446,8 +1475,9 @@ def main():
                         # end date
                         SecondDate()
 
-                        pharm_start = vl_data[(vl_data['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
-                                         (vl_data['Pharmacy_LastPickupdate'] <= str(firstDate.end_date))]  # type: ignore
+                        pharm_start = vl_data[
+                            (vl_data['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
+                            (vl_data['Pharmacy_LastPickupdate'] <= str(firstDate.end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -1534,8 +1564,9 @@ def main():
                         # end date
                         SecondDate()
 
-                        pharm_start = vl_data[(vl_data['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
-                                         (vl_data['Pharmacy_LastPickupdate'] <= str(SecondDate.end_date))]  # type: ignore
+                        pharm_start = vl_data[
+                            (vl_data['Pharmacy_LastPickupdate'] >= str(firstDate.start_date)) &  # type: ignore
+                            (vl_data['Pharmacy_LastPickupdate'] <= str(SecondDate.end_date))]  # type: ignore
 
                     pharm_start_count = pharm_start['Pharmacy_LastPickupdate'].count(
                     )
@@ -1579,18 +1610,21 @@ def main():
         if emr is not None:
             @st.cache(allow_output_mutation=True)
             def load_data3():
-                df_emr = pd.read_csv(emr, encoding='unicode_escape',on_bad_lines='skip')
+                df_emr = pd.read_csv(emr, encoding='unicode_escape', on_bad_lines='skip')
                 return df_emr
+
             df_emr = load_data3()
             cleanDataSet(df_emr)
 
         if ndr is not None:
             placeholder.empty()
             ndrholder.empty()
+
             @st.cache(allow_output_mutation=True)
             def load_data4():
-                df_ndr = pd.read_csv(ndr, encoding='unicode_escape',on_bad_lines='skip')
+                df_ndr = pd.read_csv(ndr, encoding='unicode_escape', on_bad_lines='skip')
                 return df_ndr
+
             df_ndr = load_data4()
 
         with st.sidebar:
@@ -1606,11 +1640,11 @@ def main():
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
 
+
 def select_activities():
     activities = ['', 'Treatment New', 'Treatment Current', 'Viral-Load Cascade',
                   'Clinical Report']
     return activities
-
 
 
 hide_streamlit_style = """

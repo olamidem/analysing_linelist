@@ -20,7 +20,6 @@ st.set_page_config(page_title="Report Dashboard 💻", page_icon="📑", layout=
 with open('style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-
 def main(low_memory=False):
     def condition(age):
         if 5 <= age <= 9:

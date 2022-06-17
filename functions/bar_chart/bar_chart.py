@@ -31,7 +31,6 @@ def bar_chart_display(female, male):
             .set_global_opts(title_opts=opts.TitleOpts(title="Sex and Age Group", subtitle="CURRENT AGE"))
             .render_embed()
     )
-
     components.html(c, height=500, width=900)
 
 

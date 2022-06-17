@@ -25,7 +25,6 @@ def age_grouping(age_group):
     fiftyplus = fiftyplus['New_Age'].count()
     return fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, lessthantwenty_four, lessthantwenty_nine
 
-
 def pregnant_grouping(age_group):
     lessthannineteen = age_group.query(' Current_Age > = 15 & Current_Age <= 19 ')
     lessthannineteen = lessthannineteen['Current_Age'].count()

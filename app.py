@@ -20,6 +20,7 @@ st.set_page_config(page_title="Report Dashboard 💻", page_icon="📑", layout=
 with open('style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
+
 def main(low_memory=False):
     def condition(age):
         if 5 <= age <= 9:
@@ -1652,15 +1653,6 @@ def main(low_memory=False):
             df['appointmentDate'] = df['appointmentDate'].dt.date
 
             if select_downlaod == 'MISSED APPOINTMENT':
-
-                missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
-
-                selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
-
-                selected_option = missedAppointment[selected_column]
-
-                output = selected_option.reset_index(drop=True)
-
                 states = df['State'].unique()
 
                 with st.sidebar:
@@ -1676,12 +1668,31 @@ def main(low_memory=False):
                     )
                     facilities = state.query('FacilityName == @select_facilities')
 
+                missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
+
+                selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
+
+                selected_option = missedAppointment[selected_column]
+
+                output = selected_option.reset_index(drop=True)
+
                 if selected_option.empty:
                     st.info('Select columns to Download')
                 else:
                     output
 
                     download(output, convert_df, key="btn4")
+
+                if select_state:
+                    missedAppointment = df.query('State == @select_state & appointmentDate >= @start_date & '
+                                                 'appointmentDate <= @end_date')
+
+                    # selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
+
+                    # selected_option = missedAppointment[selected_column]
+
+                    output = missedAppointment.reset_index(drop=True)
+                    output
 
     if selected == 'EMR-NDR':
         st.markdown('<p class="font">EMR VS NDR 📝</p>',

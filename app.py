@@ -1635,7 +1635,13 @@ def main(low_memory=False):
             placeholder.empty()
         if linelist is not None:
             placeholder.empty()
-            df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip', low_memory=False)
+
+            @st.cache(allow_output_mutation=True)
+            def load_data3():
+                df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip', low_memory=False)
+                return df
+
+            df = load_data3()
             cleanDataSet(df)
 
             df['LastPickupDateCal'] = pd.to_datetime(
@@ -1652,8 +1658,23 @@ def main(low_memory=False):
             df['appointmentDate'] = df.apply(calMissedApp, axis=1)
             df['appointmentDate'] = df['appointmentDate'].dt.date
 
+            missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
+
+            selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
+
+            selected_option = missedAppointment[selected_column]
+
+            output = selected_option.reset_index(drop=True)
+
+            if selected_option.empty:
+                st.info('Select columns to Download')
+            else:
+                output
+
+                download(output, convert_df, key="btn4")
+
             if select_downlaod == 'MISSED APPOINTMENT':
-                states = df['State'].unique()
+                states = missedAppointment['State'].unique()
 
                 with st.sidebar:
                     st.markdown('<br>', unsafe_allow_html=True)
@@ -1667,21 +1688,6 @@ def main(low_memory=False):
                         'Select Facilities', facilities, key='facilities'
                     )
                     facilities = state.query('FacilityName == @select_facilities')
-
-                missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
-
-                selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
-
-                selected_option = missedAppointment[selected_column]
-
-                output = selected_option.reset_index(drop=True)
-
-                if selected_option.empty:
-                    st.info('Select columns to Download')
-                else:
-                    output
-
-                    download(output, convert_df, key="btn4")
 
                 if select_state:
                     missedAppointment = df.query('State == @select_state & appointmentDate >= @start_date & '

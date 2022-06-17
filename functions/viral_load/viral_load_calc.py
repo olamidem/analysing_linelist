@@ -2,6 +2,7 @@ from dateutil.relativedelta import relativedelta
 from datetime import timedelta
 import pandas as pd
 
+
 def vl_cascade_calc(documentedViralload, suppressedVl, suppressionRate, treatmentCurrent_count, vLEligibleCount,
                     vlAwaiting_Result_count, vlCoverage, vlSamplesNotYet, vlSentToLab):
     vlCascade = {

@@ -1,3 +1,4 @@
+/*noinspection ALL*/
 body {
   font-family: Bookman Old Style, Bookman Old Style !important;
   font-weight: 100px !important;
@@ -41,6 +42,8 @@ div.css-1adrfps{
     width:20rem !important;
     padding: 1rem 1rem !important;
 }
+
+/*noinspection ALL*/
 div.css-11fbze8{
     gap:rem !important
 }
@@ -53,7 +56,7 @@ div.css-1djdyxw{
   font-size: 20px;
 }
 span.css-10trblm.e16nr0p30{
-    padding: 0rem 0px !important
+    padding: 0rem 0px !important;
     font-weight: 0;
 }
 .caution {
@@ -66,7 +69,6 @@ span.css-10trblm.e16nr0p30{
   font-family: "Cooper Black";
   color: #176c36;
   text-align: left;
-  text-decoration: underline;
 }
 div.element-container.css-1rlgw36.e1tzin5v3 {
   margin-top: 50px;
@@ -182,6 +184,8 @@ div.css-8u98yl.exg6vvm0 {
     flex: 0 0 100%;
   }
 }
+
+/*noinspection ALL*/
 @media (max-width: 895px) {
   .container {
     font-weight: 10px;
@@ -369,7 +373,7 @@ div.element-container.css-18edgy2.e1tzin5v3{
     text-align:left;
 }
 [data-stale="false"]{
-    text-align:center;
+ text-align:center;
 }
 
 div.container-xxl{

@@ -29,7 +29,7 @@ def pie_chart_display(pieChart):
                              )
             .render_embed()
     )
-    components.html(p, width=1000, height=500)
+    components.html(p, width=900, height=500)
 
 
 def pie_chart_vload(pieChart):
@@ -49,4 +49,4 @@ def pie_chart_vload(pieChart):
         )
             .render_embed()
     )
-    components.html(p, width=1000, height=500)
+    components.html(p, width=900, height=500)

@@ -32,7 +32,7 @@ def bar_chart_display(female, male):
             .render_embed()
     )
 
-    components.html(c, height=500, width=1000)
+    components.html(c, height=500, width=900)
 
 
 def pregnant_breastfeeding_barchart(breastfeeding, pregnant):
@@ -47,7 +47,7 @@ def pregnant_breastfeeding_barchart(breastfeeding, pregnant):
             title_opts=opts.TitleOpts(title="Sex and Age Group", subtitle="Current Pregnancy Status"))
             .render_embed()
     )
-    components.html(pregnant_breastfeeding, height=500, width=1000)
+    components.html(pregnant_breastfeeding, height=500, width=900)
 
 
 def bar_chart_suppressed_vl(female, male):
@@ -80,4 +80,4 @@ def bar_chart_suppressed_vl(female, male):
             .render_embed()
     )
 
-    components.html(c, height=500, width=1000)
+    components.html(c, height=500, width=900)

@@ -6,7 +6,7 @@ def download(fileName, convert_df, key):
     st.download_button(
         label="Download Report",
         data=csv,
-        file_name='treatment_new.csv',
+        file_name='report.csv',
         mime='text/csv',
         key=key
     )

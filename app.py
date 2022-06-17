@@ -21,7 +21,7 @@ with open('style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 
-def main():
+def main(low_memory=False):
     def condition(age):
         if 5 <= age <= 9:
             return "5 - 9"
@@ -185,7 +185,8 @@ def main():
 
             @st.cache(allow_output_mutation=True)
             def load_data1():
-                df = pd.read_csv(st.session_state.data, encoding='unicode_escape', on_bad_lines='skip')
+                df = pd.read_csv(st.session_state.data, encoding='unicode_escape', on_bad_lines='skip',
+                                 low_memory=False)
                 dob = dateConverter(df['DOB'])
                 dob = dob.dt.date
                 saveDate = date.today()
@@ -1081,7 +1082,7 @@ def main():
 
             @st.cache(allow_output_mutation=True)
             def load_data2():
-                df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip')
+                df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip', low_memory=False)
 
                 return df
 
@@ -1607,7 +1608,6 @@ def main():
 
     if selected == 'Download':
         st.markdown('<p class="font">Downloads Dashboard 🌎</p>', unsafe_allow_html=True)
-
         with st.sidebar:
             select_downlaod = st.selectbox('Select what to download?',
                                            ('MISSED APPOINTMENT', 'IIT', 'POTENTIAL IIT', 'Vl ELIGIBILITY'))
@@ -1624,17 +1624,18 @@ def main():
             end_date = SecondDate.end_date
 
         placeholder = st.empty()
-        if st.session_state.data is not None:
-            linelist = placeholder.file_uploader(
-                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
-            placeholder.empty()
-        else:
+        if st.session_state is not None:
             linelist = placeholder.file_uploader(
                 'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
 
+        else:
+            linelist = placeholder.file_uploader(
+                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+            st.session_state = linelist
+            placeholder.empty()
         if linelist is not None:
             placeholder.empty()
-            df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip')
+            df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip', low_memory=False)
             cleanDataSet(df)
 
             df['LastPickupDateCal'] = pd.to_datetime(

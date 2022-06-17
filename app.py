@@ -1,3 +1,4 @@
+import struct
 from datetime import timedelta, date, datetime
 import pandas as pd
 from dateutil.relativedelta import relativedelta
@@ -1659,18 +1660,21 @@ def main(low_memory=False):
             df['appointmentDate'] = df['appointmentDate'].dt.date
 
             missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
+            missed = st.empty()
+            missed_output = st.empty()
+            with missed:
 
-            selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
+                selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
 
             selected_option = missedAppointment[selected_column]
 
             output = selected_option.reset_index(drop=True)
 
             if selected_option.empty:
-                st.info('Select columns to Download')
+                with missed_output:
+                    st.info('Select columns to Download')
             else:
                 output
-
                 download(output, convert_df, key="btn4")
 
             if select_downlaod == 'MISSED APPOINTMENT':
@@ -1689,13 +1693,18 @@ def main(low_memory=False):
                     )
                     facilities = state.query('FacilityName == @select_facilities')
 
+                    st.markdown('<br>', unsafe_allow_html=True)
+                    st.button('Click to load')
+
                 if select_state:
+                    missed.empty()
+                    missed_output.empty()
                     missedAppointment = df.query('State == @select_state & appointmentDate >= @start_date & '
                                                  'appointmentDate <= @end_date')
 
-                    # selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
+                    selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
 
-                    # selected_option = missedAppointment[selected_column]
+                    selected_option = missedAppointment[selected_column]
 
                     output = missedAppointment.reset_index(drop=True)
                     output

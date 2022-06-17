@@ -371,10 +371,11 @@ div.element-container.css-18edgy2.e1tzin5v3{
 .row-widget.stDownloadButton{
     text-align:left;
 }
+/*
 [data-stale="false"]{
  text-align:center;
 }
-
+*/
 div.container-xxl{
     max-width:100%;
 }

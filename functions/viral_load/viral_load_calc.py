@@ -3,6 +3,24 @@ from datetime import timedelta
 import pandas as pd
 
 
+def suppressed_viral_load(vl_documented):
+    vl_documented['CurrentViralLoad'] = vl_documented['CurrentViralLoad'].astype(float)
+    suppressedVl = vl_documented.query(
+        'CurrentViralLoad < 1000')
+    return suppressedVl
+
+
+def documented_viralload(dateConverter, df, report_date, viralLoadEligible):
+    startDate = report_date
+    endDate = startDate + timedelta(days=-364)  # type: ignore
+    daysOnArt = viralLoadEligible(df)
+    daysOnArt['DateofCurrentViralLoad'] = dateConverter(daysOnArt.DateofCurrentViralLoad)
+    daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad']
+    vl_documented = daysOnArt.query(
+        ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
+    return vl_documented
+
+
 def vl_cascade_calc(documentedViralload, suppressedVl, suppressionRate, treatmentCurrent_count, vLEligibleCount,
                     vlAwaiting_Result_count, vlCoverage, vlSamplesNotYet, vlSentToLab):
     vlCascade = {

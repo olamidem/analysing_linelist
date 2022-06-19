@@ -1,4 +1,3 @@
-import struct
 from datetime import timedelta, date, datetime
 import pandas as pd
 from dateutil.relativedelta import relativedelta
@@ -7,6 +6,7 @@ from functions.age_grouping.age_grouping import *
 from functions.bar_chart.bar_chart import *
 from functions.cleaningData.cleaningFunc import *
 from functions.download.downloadFun import *
+from functions.missed_appointment.missed_appointment import *
 from functions.pie_chart.pieChart import *
 from functions.tx_curr.treatmentCurrent import *
 from functions.tx_curr.tx_curr_card import *
@@ -63,22 +63,6 @@ def main(low_memory=False):
             st.info("PREGNANT/B FEEDING")
             st.write(p.value_counts())  # type: ignore
 
-    def suppressed_viral_load(vl_documented):
-        vl_documented['CurrentViralLoad'] = vl_documented['CurrentViralLoad'].astype(float)
-        suppressedVl = vl_documented.query(
-            'CurrentViralLoad < 1000')
-        return suppressedVl
-
-    def documented_viralload(dateConverter, df, report_date, viralLoadEligible):
-        startDate = report_date
-        endDate = startDate + timedelta(days=-364)  # type: ignore
-        daysOnArt = viralLoadEligible(df)
-        daysOnArt['DateofCurrentViralLoad'] = dateConverter(daysOnArt.DateofCurrentViralLoad)
-        daysOnArt['DateofCurrentViralLoad'] = daysOnArt['DateofCurrentViralLoad']
-        vl_documented = daysOnArt.query(
-            ' DateofCurrentViralLoad <= @startDate & DateofCurrentViralLoad >= @endDate')
-        return vl_documented
-
     def artStart(dataSet):
         return dataSet[(dataSet['ARTStartDate'] >= str(start_date)) &  # type: ignore
                        (dataSet['ARTStartDate'] <= str(end_date)) &  # type: ignore
@@ -103,7 +87,7 @@ def main(low_memory=False):
     def dateConverter(dateColumn):
         return pd.to_datetime(dateColumn, format="%d/%m/%Y", errors='ignore')
 
-    ######################### DATE FUNCTION###############################
+    # ######################## DATE FUNCTION###############################
     def firstDate():
         firstDate.start_date = st.date_input("From", )
 
@@ -133,6 +117,17 @@ def main(low_memory=False):
         state = df.query('State == @select_state')
         lgas = state['LGA'].unique()
         return lgas, select_state, state
+
+    def hide_display():
+        missed = st.empty()
+        missed_output = st.empty()
+        display_missed = st.empty()
+        return display_missed, missed, missed_output
+
+    def select_activities():
+        activities = ['', 'Treatment New', 'Treatment Current', 'Viral-Load Cascade',
+                      'Clinical Report']
+        return activities
 
     activities = select_activities()
     reports = ['', 'HI Weekly Report',
@@ -1609,20 +1604,6 @@ def main(low_memory=False):
 
     if selected == 'Download':
         st.markdown('<p class="font">Downloads Dashboard 🌎</p>', unsafe_allow_html=True)
-        with st.sidebar:
-            select_downlaod = st.selectbox('Select what to download?',
-                                           ('MISSED APPOINTMENT', 'IIT', 'POTENTIAL IIT', 'Vl ELIGIBILITY'))
-        with st.sidebar:
-            st.markdown('<br>', unsafe_allow_html=True)
-            # start date
-            firstDate()
-            start_date = firstDate.start_date
-
-        with st.sidebar:
-            st.markdown('<br>', unsafe_allow_html=True)
-            # end date
-            SecondDate()
-            end_date = SecondDate.end_date
 
         placeholder = st.empty()
         if st.session_state is not None:
@@ -1645,41 +1626,52 @@ def main(low_memory=False):
             df = load_data3()
             cleanDataSet(df)
 
-            df['LastPickupDateCal'] = pd.to_datetime(
-                df['LastPickupDateCal'])
+            df['LastPickupDateCal'] = dateConverter(df['LastPickupDateCal'])
 
             lastPic = df['LastPickupDateCal']
             arvRefill = df['DaysOfARVRefill'].astype(int)
 
             df = df.query('LastPickupDateCal != "" ')
 
-            def calMissedApp(x):
-                return x['LastPickupDateCal'] + relativedelta(days=int(x['DaysOfARVRefill']))
-
-            df['appointmentDate'] = df.apply(calMissedApp, axis=1)
-            df['appointmentDate'] = df['appointmentDate'].dt.date
-
-            missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
-            missed = st.empty()
-            missed_output = st.empty()
-            with missed:
-
-                selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
-
-            selected_option = missedAppointment[selected_column]
-
-            output = selected_option.reset_index(drop=True)
-
-            if selected_option.empty:
-                with missed_output:
-                    st.info('Select columns to Download')
-            else:
-                output
-                download(output, convert_df, key="btn4")
+            with st.sidebar:
+                select_downlaod = st.selectbox('Select what to download?',
+                                               ('MISSED APPOINTMENT', 'IIT', 'POTENTIAL IIT', 'VL ELIGIBILITY',
+                                                'COMBINE LINE-LIST'))
 
             if select_downlaod == 'MISSED APPOINTMENT':
-                states = missedAppointment['State'].unique()
+                missed_appointment_calculation(df)
 
+                with st.sidebar:
+                    st.markdown('<br>', unsafe_allow_html=True)
+                    # start date
+                    firstDate()
+                    start_date = firstDate.start_date
+
+                with st.sidebar:
+                    st.markdown('<br>', unsafe_allow_html=True)
+                    # end date
+                    SecondDate()
+                    end_date = SecondDate.end_date
+
+                display_missed, missed, missed_output = hide_display()
+
+                missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
+                with missed:
+                    selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
+
+                selected_option = missedAppointment[selected_column]
+
+                output = selected_option.reset_index(drop=True)
+
+                if selected_option.empty:
+                    with missed_output:
+                        st.info('Select columns to Download')
+                else:
+                    with display_missed:
+                        output
+                    download(output, convert_df, key="btn4")
+
+                states = missedAppointment['State'].unique()
                 with st.sidebar:
                     st.markdown('<br>', unsafe_allow_html=True)
                     lgas, select_state, state = selectState(df, states)
@@ -1699,15 +1691,63 @@ def main(low_memory=False):
                 if select_state:
                     missed.empty()
                     missed_output.empty()
-                    missedAppointment = df.query('State == @select_state & appointmentDate >= @start_date & '
-                                                 'appointmentDate <= @end_date')
+                    display_missed.empty()
+                    # missedAppointment = df.query('State == @select_state & appointmentDate >= @start_date & '
+                    #                              'appointmentDate <= @end_date')
+                    #
+                    # selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
+                    #
+                    # selected_option = missedAppointment[selected_column]
+                    #
+                    # output = missedAppointment.reset_index(drop=True)
+                    # output
+            if select_downlaod == 'IIT':
+                missed_appointment_calculation(df)
 
-                    selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
+                display_missed, missed, missed_output = hide_display()
 
-                    selected_option = missedAppointment[selected_column]
+                with st.sidebar:
+                    st.markdown('<br>', unsafe_allow_html=True)
+                    # start date
+                    firstDate()
+                    start_date = firstDate.start_date
 
-                    output = missedAppointment.reset_index(drop=True)
-                    output
+                with st.sidebar:
+                    st.markdown('<br>', unsafe_allow_html=True)
+                    # end date
+                    SecondDate()
+                    end_date = SecondDate.end_date
+
+                iit_query = df.query('IIT >= @start_date & IIT <= @end_date')
+                with missed:
+                    selected_column = st.multiselect('Select columns to download', iit_query.columns)
+
+                selected_option = iit_query[selected_column]
+
+                output = selected_option.reset_index(drop=True)
+
+                if selected_option.empty:
+                    with missed_output:
+                        st.info('Select columns to Download')
+                else:
+                    with display_missed:
+                        output
+                    download(output, convert_df, key="btn4", )
+
+            if select_downlaod == 'COMBINE LINE-LIST':
+                uploaded_files = st.file_uploader("Choose a CSV file", accept_multiple_files=True)
+                try:
+                    li = []
+                    for uploaded_file in uploaded_files:
+                        if uploaded_file is not None:
+                            uploaded = pd.read_csv(uploaded_file, encoding='unicode_escape', on_bad_lines='skip',
+                                                   low_memory=False,
+                                                   index_col=None, header=0)
+                            app = li.append(uploaded)
+                    frame = pd.concat(li)
+                    frame
+                except:
+                    pass
 
     if selected == 'EMR-NDR':
         st.markdown('<p class="font">EMR VS NDR 📝</p>',
@@ -1753,13 +1793,6 @@ def main(low_memory=False):
         st.subheader('Help us improve!!!.')
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
-
-
-def select_activities():
-    activities = ['', 'Treatment New', 'Treatment Current', 'Viral-Load Cascade',
-                  'Clinical Report']
-    return activities
-
 
 hide_streamlit_style = """
             <style>

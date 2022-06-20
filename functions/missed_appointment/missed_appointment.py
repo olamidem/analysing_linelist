@@ -1,6 +1,5 @@
 from dateutil.relativedelta import relativedelta
 
-
 def missed_appointment_calculation(df):
     def calMissedApp(x):
         return x['LastPickupDateCal'] + relativedelta(days=int(x['DaysOfARVRefill']))

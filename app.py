@@ -1629,7 +1629,7 @@ def main(low_memory=False):
             df['LastPickupDateCal'] = dateConverter(df['LastPickupDateCal'])
 
             lastPic = df['LastPickupDateCal']
-            arvRefill = df['DaysOfARVRefill'].astype(int)
+            # arvRefill = df['DaysOfARVRefill'].astype(int)
 
             df = df.query('LastPickupDateCal != "" ')
 

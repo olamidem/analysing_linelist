@@ -1,5 +1,6 @@
 from datetime import timedelta, date, datetime
 import pandas as pd
+import streamlit
 from dateutil.relativedelta import relativedelta
 from streamlit_option_menu import option_menu
 from functions.age_grouping.age_grouping import *
@@ -1736,18 +1737,28 @@ def main(low_memory=False):
 
             if select_downlaod == 'COMBINE LINE-LIST':
                 uploaded_files = st.file_uploader("Choose a CSV file", accept_multiple_files=True)
+
+                li = []
                 try:
-                    li = []
                     for uploaded_file in uploaded_files:
                         if uploaded_file is not None:
                             uploaded = pd.read_csv(uploaded_file, encoding='unicode_escape', on_bad_lines='skip',
                                                    low_memory=False,
                                                    index_col=None, header=0)
+                            uploaded.astype(str)
                             app = li.append(uploaded)
                     frame = pd.concat(li)
+
+                    count_facilities = frame['FacilityName'].nunique()
+                    st.warning(f'TOTAL FACILITIES:  {count_facilities}')
+
+                    frame.replace(to_replace=np.nan, value="")
                     frame
+                    st.markdown('<br>', unsafe_allow_html=True)
+                    download(frame, convert_df, key="btn4", )
+
                 except:
-                    pass
+                    st.error(streamlit.error)
 
     if selected == 'EMR-NDR':
         st.markdown('<p class="font">EMR VS NDR 📝</p>',
@@ -1793,6 +1804,7 @@ def main(low_memory=False):
         st.subheader('Help us improve!!!.')
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
+
 
 hide_streamlit_style = """
             <style>

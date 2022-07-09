@@ -109,6 +109,10 @@ div.css-8u98yl.exg6vvm0 {
   font-size: 28px;
   font-weight: normal;
 }
+.suppressed{
+    font-size: 10px;
+}
+
 .container .card .title:before,
 .container .card .title:after {
   content: "";
@@ -169,6 +173,7 @@ div.css-8u98yl.exg6vvm0 {
 
 .container .card:nth-child(6) .title {
   background-color: #03a1a4;
+    font-size: 13px;
 }
 .container .card:nth-child(6) .title:before,
 .container .card:nth-child(6) .title:after {

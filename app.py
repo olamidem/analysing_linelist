@@ -1,6 +1,7 @@
 from datetime import timedelta, date, datetime
 import pandas as pd
 import streamlit
+import streamlit.errors
 from dateutil.relativedelta import relativedelta
 from streamlit_option_menu import option_menu
 from functions.age_grouping.age_grouping import *
@@ -141,7 +142,7 @@ def main(low_memory=False):
 
     selected = option_menu(
         menu_title=None,
-        options=['Monitoring', 'Reports', 'Download', 'EMR-NDR', 'Feedback'],
+        options=['Monitoring', 'Reports', 'Collate', 'NDR', 'Feedback'],
         icons=['pie-chart-fill', 'book', 'cloud-arrow-down', 'list-task', 'chat-square-text-fill'],
         orientation='horizontal',
         menu_icon='cast',
@@ -182,7 +183,7 @@ def main(low_memory=False):
 
             @st.cache(allow_output_mutation=True)
             def load_data1():
-                df = pd.read_csv(st.session_state.data, encoding='unicode_escape', on_bad_lines='skip',
+                df = pd.read_csv(st.session_state.data, encoding='ISO-8859-1', on_bad_lines='skip',
                                  low_memory=False)
                 dob = dateConverter(df['DOB'])
                 dob = dob.dt.date
@@ -473,9 +474,10 @@ def main(low_memory=False):
 
                 st.markdown('<br>',
                             unsafe_allow_html=True)
-                report_date = st.date_input("Select your reporting date", )
-                st.markdown('<br>',
-                            unsafe_allow_html=True)
+                with st.sidebar:
+                    report_date = st.date_input("Select your reporting date", )
+                    st.markdown('<br>',
+                                unsafe_allow_html=True)
 
                 treatmentCurrent = tx_curr(df)
                 treatmentCurrent_count = txCurr(treatmentCurrent)
@@ -1032,31 +1034,112 @@ def main(low_memory=False):
 
                         bar_chart_display(female, male)
             if choice == 'Clinical Report':
-                with st.sidebar:
-                    option = st.selectbox('What would you like to do?',
-                                          ('', 'MISSED APPOINTMENT', 'IIT', 'POTENTIAL IIT'))
-                with st.sidebar:
-                    # start date
-                    firstDate()
-                    start_date = firstDate.start_date
+                df['LastPickupDateCal'] = dateConverter(df['LastPickupDateCal'])
+
+                lastPic = df['LastPickupDateCal']
+                # arvRefill = df['DaysOfARVRefill'].astype(int)
+
+                df = df.query('LastPickupDateCal != "" ')
 
                 with st.sidebar:
-                    st.markdown('<br>', unsafe_allow_html=True)
-                    # end date
-                    SecondDate()
-                    end_date = SecondDate.end_date
+                    select_downlaod = st.selectbox('Select what to download?',
+                                                   ('MISSED APPOINTMENT', 'IIT', 'POTENTIAL IIT', 'VL ELIGIBILITY',))
 
-                st.write('You selected:', option)
-                st.info('MMD <3')
-                st.warning('MMD 3')
-                st.success('MMD 4')
-                st.warning('MMD 5')
-                st.info('MMD 6')
-                st.success('MISS APPOINTMENT')
-                st.info('IIT')
-                st.warning('POTENTIAL IIT')
-                st.success('UNSUPPRESSED VL')
-                st.info('LOW-LEVEL VL')
+                if select_downlaod == 'MISSED APPOINTMENT':
+                    missed_appointment_calculation(df)
+
+                    with st.sidebar:
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        # start date
+                        firstDate()
+                        start_date = firstDate.start_date
+
+                    with st.sidebar:
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        # end date
+                        SecondDate()
+                        end_date = SecondDate.end_date
+
+                    display_missed, missed, missed_output = hide_display()
+
+                    missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
+                    with missed:
+                        selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
+
+                    selected_option = missedAppointment[selected_column]
+
+                    output = selected_option.reset_index(drop=True)
+
+                    if selected_option.empty:
+                        with missed_output:
+                            st.info('Select columns to Download')
+                    else:
+                        with display_missed:
+                            output
+                        download(output, convert_df, key="btn4")
+
+                    states = missedAppointment['State'].unique()
+                    with st.sidebar:
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        lgas, select_state, state = selectState(df, states)
+
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        facilities, lga, select_lgas = selectLga(lgas, state)
+
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        select_facilities = st.multiselect(
+                            'Select Facilities', facilities, key='facilities'
+                        )
+                        facilities = state.query('FacilityName == @select_facilities')
+
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        st.button('Click to load')
+
+                    if select_state:
+                        missed.empty()
+                        missed_output.empty()
+                        display_missed.empty()
+                        # missedAppointment = df.query('State == @select_state & appointmentDate >= @start_date & '
+                        #                              'appointmentDate <= @end_date')
+                        #
+                        # selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
+                        #
+                        # selected_option = missedAppointment[selected_column]
+                        #
+                        # output = missedAppointment.reset_index(drop=True)
+                        # output
+                if select_downlaod == 'IIT':
+                    missed_appointment_calculation(df)
+
+                    display_missed, missed, missed_output = hide_display()
+
+                    with st.sidebar:
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        # start date
+                        firstDate()
+                        start_date = firstDate.start_date
+
+                    with st.sidebar:
+                        st.markdown('<br>', unsafe_allow_html=True)
+                        # end date
+                        SecondDate()
+                        end_date = SecondDate.end_date
+
+                    iit_query = df.query('IIT >= @start_date & IIT <= @end_date')
+                    with missed:
+                        selected_column = st.multiselect('Select columns to download', iit_query.columns)
+
+                    selected_option = iit_query[selected_column]
+
+                    output = selected_option.reset_index(drop=True)
+
+                    if selected_option.empty:
+                        with missed_output:
+                            st.info('Select columns to Download')
+                    else:
+                        with display_missed:
+                            output
+                        download(output, convert_df, key="btn4", )
 
     # REPORT MODULES
 
@@ -1079,7 +1162,14 @@ def main(low_memory=False):
 
             @st.cache(allow_output_mutation=True)
             def load_data2():
-                df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip', low_memory=False)
+                df = pd.read_csv(linelist, encoding='ISO-8859-1', on_bad_lines='skip', low_memory=False)
+
+                dob = dateConverter(df['DOB'])
+                dob = dob.dt.date
+                saveDate = date.today()
+                df['today_date'] = saveDate
+                df['New_Age'] = (saveDate - dob) / 365
+                df['New_Age'] = df['New_Age'].dt.days
 
                 return df
 
@@ -1603,79 +1693,115 @@ def main(low_memory=False):
                         st.subheader('Child 2nd Line ARV')
                         output()
 
-    if selected == 'Download':
+    if selected == 'Collate':
         st.markdown('<p class="font">Downloads Dashboard 🌎</p>', unsafe_allow_html=True)
 
-        placeholder = st.empty()
-        if st.session_state is not None:
-            linelist = placeholder.file_uploader(
-                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
+        uploaded_files = st.file_uploader("Choose a CSV file", accept_multiple_files=True)
 
-        else:
-            linelist = placeholder.file_uploader(
-                'Upload your Treatment Linelist here. Pls ART Linelist Only 🙏🙏🙏🙏', type=['csv'])
-            st.session_state = linelist
-            placeholder.empty()
-        if linelist is not None:
-            placeholder.empty()
+        if uploaded_files is not None:
+
+            li = []
+            # try:
+            for uploaded_file in uploaded_files:
+                if uploaded_file is not None:
+                    uploaded = pd.read_csv(uploaded_file, on_bad_lines='skip',
+                                           low_memory=False,
+                                           index_col=None, header=0, encoding='ISO-8859-1')
+
+                    uploaded['PhoneNo'] = uploaded['PhoneNo'].replace(
+                        to_replace=['null', np.nan, 'NONE', 'NIL', 'NIL.'],
+                        value="")
+                    uploaded['Whostage'] = uploaded['Whostage'].replace(to_replace=np.nan, value="")
+                    uploaded['PhoneNo'] = uploaded['PhoneNo'].astype(str)
+                    uploaded['Whostage'] = uploaded['Whostage'].astype(str)
+
+                    app = li.append(uploaded)
+            try:
+                frame = pd.concat(li)
+                frame.astype(str)
+
+                count_facilities = frame['FacilityName'].nunique()
+                st.warning(f'TOTAL FACILITIES:  {count_facilities}')
+
+                frame.replace(to_replace=np.nan, value="")
+                # uploaded.replace(r'\\N', "", regex=True, inplace=True)
+                frame
+                st.markdown('<br>', unsafe_allow_html=True)
+                download(frame, convert_df, key="btn4", )
+            except:
+                streamlit.errors.DeprecationError
+
+            # frame.astype(str)
+            #
+            # count_facilities = frame['FacilityName'].nunique()
+            # st.warning(f'TOTAL FACILITIES:  {count_facilities}')
+            #
+            # frame.replace(to_replace=np.nan, value="")
+            # # uploaded.replace(r'\\N', "", regex=True, inplace=True)
+            # frame
+            # st.markdown('<br>', unsafe_allow_html=True)
+            # download(frame, convert_df, key="btn4", )
+            # except:
+            #     pass
+
+    if selected == 'NDR':
+        st.markdown('<p class="font">NDR 📝</p>',unsafe_allow_html=True)
+        st.markdown('<br>', unsafe_allow_html=True)
+
+        ndrholder = st.empty()
+
+        ndr = ndrholder.file_uploader(
+            'UPLOAD NDR LINELIST 🙏🙏🙏🙏', type=['csv'])
+
+        if ndr is not None:
+            ndrholder.empty()
 
             @st.cache(allow_output_mutation=True)
-            def load_data3():
-                df = pd.read_csv(linelist, encoding='unicode_escape', on_bad_lines='skip', low_memory=False)
-                return df
+            def load_data4():
+                df_ndr = pd.read_csv(ndr, encoding='unicode_escape', on_bad_lines='skip')
+                return df_ndr
 
-            df = load_data3()
-            cleanDataSet(df)
+            df_ndr = load_data4()
+            dict = {
+                'Patient Identifier': 'PepID',
+                'Current Age': 'Current_Age',
+                'ART Start Date': 'ARTStartDate',
+                'Current Status (28 Days)': 'CurrentARTStatus_Pharmacy',
+                'Facility': 'FacilityName'
 
-            df['LastPickupDateCal'] = dateConverter(df['LastPickupDateCal'])
+            }
+            df_ndr.rename(columns=dict, inplace=True)
+            df_ndr['New_Age'] = df_ndr['Current_Age']
 
-            lastPic = df['LastPickupDateCal']
-            # arvRefill = df['DaysOfARVRefill'].astype(int)
-
-            df = df.query('LastPickupDateCal != "" ')
-
+            all_card = st.empty()
             with st.sidebar:
-                select_downlaod = st.selectbox('Select what to download?',
-                                               ('MISSED APPOINTMENT', 'IIT', 'POTENTIAL IIT', 'VL ELIGIBILITY',
-                                                'COMBINE LINE-LIST'))
+                choice = st.selectbox('Select Indicator', activities)
+            if choice == 'Treatment Current':
 
-            if select_downlaod == 'MISSED APPOINTMENT':
-                missed_appointment_calculation(df)
+                txCurrent = ndr_txCurr(df_ndr)
+
+                st.markdown('<br>', unsafe_allow_html=True)
+
+                st.markdown('<br>', unsafe_allow_html=True)
+
+                txCurrPlaceholder = st.empty()
+                placeholder = st.empty()
+                placeholder.empty()
+                treatmentCurrent = txCurrent
+                treatmentCurrent_count = txCurr(treatmentCurrent)
+                countMale = maleTxCurr(treatmentCurrent)
+                countFemale = femaleTxCurr(treatmentCurrent)
+                countAdult = adultTxCurr(treatmentCurrent)
+                countAdolescent = adolescentTxCurr(treatmentCurrent)
+                countPaed = paedTxCurr(treatmentCurrent)
+
+                txcurr_data = txCurrent
+
+                states = txcurr_data['State'].unique()
 
                 with st.sidebar:
                     st.markdown('<br>', unsafe_allow_html=True)
-                    # start date
-                    firstDate()
-                    start_date = firstDate.start_date
-
-                with st.sidebar:
-                    st.markdown('<br>', unsafe_allow_html=True)
-                    # end date
-                    SecondDate()
-                    end_date = SecondDate.end_date
-
-                display_missed, missed, missed_output = hide_display()
-
-                missedAppointment = df.query('appointmentDate >= @start_date & appointmentDate <= @end_date')
-                with missed:
-                    selected_column = st.multiselect('Select columns to download', missedAppointment.columns)
-
-                selected_option = missedAppointment[selected_column]
-
-                output = selected_option.reset_index(drop=True)
-
-                if selected_option.empty:
-                    with missed_output:
-                        st.info('Select columns to Download')
-                else:
-                    with display_missed:
-                        output
-                    download(output, convert_df, key="btn4")
-
-                states = missedAppointment['State'].unique()
-                with st.sidebar:
-                    st.markdown('<br>', unsafe_allow_html=True)
-                    lgas, select_state, state = selectState(df, states)
+                    lgas, select_state, state = selectState(txcurr_data, states)
 
                     st.markdown('<br>', unsafe_allow_html=True)
                     facilities, lga, select_lgas = selectLga(lgas, state)
@@ -1686,117 +1812,173 @@ def main(low_memory=False):
                     )
                     facilities = state.query('FacilityName == @select_facilities')
 
-                    st.markdown('<br>', unsafe_allow_html=True)
-                    st.button('Click to load')
+                with all_card:
+                    displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                treatmentCurrent_count)
+
+
+                barChartDisplay = st.empty()
+                with barChartDisplay:
+                    age_group = txcurr_data.query('Sex == "M" ')
+                    fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                    lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                    lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                        age_group)
+
+                    male = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                            lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                            lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                            lessthanforty_nine, fiftyplus]
+
+                    age_group_female = txcurr_data.query('Sex == "F" ')
+                    fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                    lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                    lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                        age_group_female)
+
+                    female = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                              lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                              lessthanthirty_four, lessthanthirty_nine, lessthanforty_four, lessthanforty_nine,
+                              fiftyplus]
+
+                    female = [int(i) for i in female]
+                    male = [int(i) for i in male]
+
+                    bar_chart_display(female, male)
 
                 if select_state:
-                    missed.empty()
-                    missed_output.empty()
-                    display_missed.empty()
-                    # missedAppointment = df.query('State == @select_state & appointmentDate >= @start_date & '
-                    #                              'appointmentDate <= @end_date')
-                    #
-                    # selected_column = st.multiselect('How would you like to be contacted?', missedAppointment.columns)
-                    #
-                    # selected_option = missedAppointment[selected_column]
-                    #
-                    # output = missedAppointment.reset_index(drop=True)
-                    # output
-            if select_downlaod == 'IIT':
-                missed_appointment_calculation(df)
+                    all_card.empty()
+                    txCurrPlaceholder.empty()
+                    barChartDisplay.empty()
+                    treatmentCurrent = ndr_txCurr(state)
+                    treatmentCurrent_count = txCurr(treatmentCurrent)
+                    countMale = maleTxCurr(treatmentCurrent)
+                    countFemale = femaleTxCurr(treatmentCurrent)
+                    countAdult = adultTxCurr(treatmentCurrent)
+                    countAdolescent = adolescentTxCurr(treatmentCurrent)
+                    countPaed = paedTxCurr(treatmentCurrent)
 
-                display_missed, missed, missed_output = hide_display()
+                    with all_card:
+                        displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                    treatmentCurrent_count)
 
-                with st.sidebar:
-                    st.markdown('<br>', unsafe_allow_html=True)
-                    # start date
-                    firstDate()
-                    start_date = firstDate.start_date
+                    with barChartDisplay:
+                        age_group = treatmentCurrent.query('Sex == "M" ')
+                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                        lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                        lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                            age_group)
 
-                with st.sidebar:
-                    st.markdown('<br>', unsafe_allow_html=True)
-                    # end date
-                    SecondDate()
-                    end_date = SecondDate.end_date
+                        male = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                lessthanforty_nine, fiftyplus]
 
-                iit_query = df.query('IIT >= @start_date & IIT <= @end_date')
-                with missed:
-                    selected_column = st.multiselect('Select columns to download', iit_query.columns)
+                        age_group_female = treatmentCurrent.query('Sex == "F" ')
+                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                        lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                        lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                            age_group_female)
 
-                selected_option = iit_query[selected_column]
+                        female = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                  lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                  lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                  lessthanforty_nine,
+                                  fiftyplus]
 
-                output = selected_option.reset_index(drop=True)
+                        female = [int(i) for i in female]
+                        male = [int(i) for i in male]
 
-                if selected_option.empty:
-                    with missed_output:
-                        st.info('Select columns to Download')
-                else:
-                    with display_missed:
-                        output
-                    download(output, convert_df, key="btn4", )
+                        bar_chart_display(female, male)
 
-            if select_downlaod == 'COMBINE LINE-LIST':
-                uploaded_files = st.file_uploader("Choose a CSV file", accept_multiple_files=True)
+                if select_lgas:
+                    all_card.empty()
+                    txCurrPlaceholder.empty()
+                    barChartDisplay.empty()
+                    treatmentCurrent = ndr_txCurr(lga)
+                    treatmentCurrent_count = txCurr(treatmentCurrent)
+                    countMale = maleTxCurr(treatmentCurrent)
+                    countFemale = femaleTxCurr(treatmentCurrent)
+                    countAdult = adultTxCurr(treatmentCurrent)
+                    countAdolescent = adolescentTxCurr(treatmentCurrent)
+                    countPaed = paedTxCurr(treatmentCurrent)
 
-                li = []
-                try:
-                    for uploaded_file in uploaded_files:
-                        if uploaded_file is not None:
-                            uploaded = pd.read_csv(uploaded_file, encoding='unicode_escape', on_bad_lines='skip',
-                                                   low_memory=False,
-                                                   index_col=None, header=0)
-                            uploaded.astype(str)
-                            app = li.append(uploaded)
-                    frame = pd.concat(li)
+                    with all_card:
+                        displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                    treatmentCurrent_count)
 
-                    count_facilities = frame['FacilityName'].nunique()
-                    st.warning(f'TOTAL FACILITIES:  {count_facilities}')
+                    with barChartDisplay:
+                        age_group = treatmentCurrent.query('Sex == "M" ')
+                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                        lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                        lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                            age_group)
 
-                    frame.replace(to_replace=np.nan, value="")
-                    frame
-                    st.markdown('<br>', unsafe_allow_html=True)
-                    download(frame, convert_df, key="btn4", )
+                        male = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                lessthanforty_nine, fiftyplus]
 
-                except:
-                    st.error(streamlit.error)
+                        age_group_female = treatmentCurrent.query('Sex == "F" ')
+                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                        lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                        lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                            age_group_female)
 
-    if selected == 'EMR-NDR':
-        st.markdown('<p class="font">EMR VS NDR 📝</p>',
-                    unsafe_allow_html=True)
+                        female = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                  lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                  lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                  lessthanforty_nine,
+                                  fiftyplus]
 
-        placeholder = st.empty()
-        ndrholder = st.empty()
-        emr = placeholder.file_uploader(
-            'STEP 1: UPLOAD EMR LINELIST 🙏🙏🙏🙏', type=['csv'])
+                        female = [int(i) for i in female]
+                        male = [int(i) for i in male]
 
-        ndr = ndrholder.file_uploader(
-            'STEP 2: UPLOAD NDR LINELIST 🙏🙏🙏🙏', type=['csv'])
+                        bar_chart_display(female, male)
 
-        if emr is not None:
-            @st.cache(allow_output_mutation=True)
-            def load_data3():
-                df_emr = pd.read_csv(emr, encoding='unicode_escape', on_bad_lines='skip')
-                return df_emr
+                if select_facilities:
+                    all_card.empty()
+                    txCurrPlaceholder.empty()
+                    treatmentCurrent = ndr_txCurr(facilities)
+                    treatmentCurrent_count = txCurr(treatmentCurrent)
+                    countMale = maleTxCurr(treatmentCurrent)
+                    countFemale = femaleTxCurr(treatmentCurrent)
+                    countAdult = adultTxCurr(treatmentCurrent)
+                    countAdolescent = adolescentTxCurr(treatmentCurrent)
+                    countPaed = paedTxCurr(treatmentCurrent)
 
-            df_emr = load_data3()
-            cleanDataSet(df_emr)
+                    with all_card:
+                        displayCard(countAdolescent, countAdult, countFemale, countMale, countPaed,
+                                    treatmentCurrent_count)
 
-        if ndr is not None:
-            placeholder.empty()
-            ndrholder.empty()
+                    with barChartDisplay:
+                        age_group = treatmentCurrent.query('Sex == "M" ')
+                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                        lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                        lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                            age_group)
 
-            @st.cache(allow_output_mutation=True)
-            def load_data4():
-                df_ndr = pd.read_csv(ndr, encoding='unicode_escape', on_bad_lines='skip')
-                return df_ndr
+                        male = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                lessthanforty_nine, fiftyplus]
 
-            df_ndr = load_data4()
+                        age_group_female = treatmentCurrent.query('Sex == "F" ')
+                        fiftyplus, lessthanforty_four, lessthanforty_nine, lessthanfour, lessthanfourteen, \
+                        lessthannineteen, lessthanone, lessthanten, lessthanthirty_four, lessthanthirty_nine, \
+                        lessthantwenty_four, lessthantwenty_nine = age_grouping(
+                            age_group_female)
 
-        with st.sidebar:
-            choice = st.selectbox('Select Indicator', activities)
-        if choice == 'Treatment New':
-            st.write(df_ndr['Current Status (28 Days)'].value_counts())
-            st.write(df_emr['CurrentARTStatus_Pharmacy'].value_counts())
+                        female = [lessthanone, lessthanfour, lessthanten, lessthanfourteen,
+                                  lessthannineteen, lessthantwenty_four, lessthantwenty_nine,
+                                  lessthanthirty_four, lessthanthirty_nine, lessthanforty_four,
+                                  lessthanforty_nine,
+                                  fiftyplus]
+
+                        female = [int(i) for i in female]
+                        male = [int(i) for i in male]
+
+                        bar_chart_display(female, male)
 
     if selected == 'Feedback':
         st.markdown('<p class="font">GOT A FEW MINUTES TO HELP ?</p>',
@@ -1804,6 +1986,11 @@ def main(low_memory=False):
         st.subheader('Help us improve!!!.')
         st.subheader(
             'Tell us what you think of our webapp. We welcome your feedback')
+
+
+def ndr_txCurr(df_ndr):
+    txCurrent = df_ndr.query('CurrentARTStatus_Pharmacy == "Active" ')
+    return txCurrent
 
 
 hide_streamlit_style = """

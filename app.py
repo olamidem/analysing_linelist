@@ -1049,8 +1049,8 @@ def main(low_memory=False):
                     df = df.query('LastPickupDateCal != "" ')
 
                     with st.sidebar:
-                        select_downlaod = st.selectbox('Select what to download?',
-                                                       ('MISSED APPOINTMENT', 'IIT', 'VL Samples Collection',
+                        select_downlaod = st.selectbox('Select what to do',
+                                                       ('MISSED APPOINTMENT', 'IIT', 'VL REPORT',
                                                         'VL ELIGIBILITY',))
 
                     if select_downlaod == 'MISSED APPOINTMENT':
@@ -1150,12 +1150,61 @@ def main(low_memory=False):
                                 output
                             download(output, convert_df, key="btn4", )
 
-                    if choice == 'VL Samples Collection':
-                        st.info('Viral load samples collection')
+                    if select_downlaod == 'VL REPORT':
+                        with st.sidebar:
+                            st.markdown('<br>', unsafe_allow_html=True)
+                            # start date
+                            firstDate()
+                            start_date = firstDate.start_date
+
+                        with st.sidebar:
+                            st.markdown('<br>', unsafe_allow_html=True)
+                            # end date
+                            SecondDate()
+                            end_date = SecondDate.end_date
+
+                            # dateConverter(df['LastDateOfSampleCollection'])
+                        df['LastDateOfSampleCollection'] = pd.to_datetime(df['LastDateOfSampleCollection'])
+                        df['DateofCurrentViralLoad'] = pd.to_datetime(df['DateofCurrentViralLoad'])
+
+                        vl_samples = df.query('LastDateOfSampleCollection >= @start_date & '
+                                              'LastDateOfSampleCollection <= @end_date')
+
+                        vl_results_recieved = df.query('DateofCurrentViralLoad >= @start_date & '
+                                                       'DateofCurrentViralLoad <= @end_date')
+
+                        vl_suppressed = vl_results_recieved.query('CurrentViralLoad <= 50')
+
+                        vl_llv = vl_results_recieved.query('CurrentViralLoad > 50 & CurrentViralLoad < 1000')
+
+                        vl_unsuppressed = vl_results_recieved.query('CurrentViralLoad >= 1000')
+
+                        vl_samples_count = vl_samples['PepID'].count()
+                        vl_results_recieved_count = vl_results_recieved['PepID'].count()
+                        vl_suppressed_count = vl_suppressed['PepID'].count()
+                        vl_llv_count = vl_llv['PepID'].count()
+                        vl_unsuppressed_count = vl_unsuppressed['PepID'].count()
+
+                        c1, c2, c3, c4, c5 = st.columns(5)
+                        with c1:
+                            st.caption('VL samples collected')
+                            st.success(vl_samples_count)
+                        with c2:
+                            st.caption('VL results received')
+                            st.info(vl_results_recieved_count)
+                        with c3:
+                            st.caption('Suppressed VL')
+                            st.warning(vl_suppressed_count)
+                        with c4:
+                            st.caption('Low level VL')
+                            st.success(vl_llv_count)
+                        with c5:
+                            st.caption('Unsuppressed VL')
+                            st.info(vl_unsuppressed_count)
+
 
             else:
-                st.warning('Kindly upload ART Line list')
-
+                st.warning('Reload and upload ART Line list')
 
     # REPORT MODULES
 
